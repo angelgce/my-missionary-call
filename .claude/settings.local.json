@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(npx *)",
+      "Bash(tsc *)",
+      "Bash(git *)",
+      "Bash(wrangler *)",
+      "Bash(curl *)",
+      "Bash(mkdir *)",
+      "Bash(ls *)"
+    ]
+  }
+}

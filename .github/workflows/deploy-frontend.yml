@@ -1,0 +1,65 @@
+name: Deploy Frontend to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Frontend (${{ github.ref_name }})
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Set environment variables
+        id: env
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "PROJECT_NAME=${{ vars.PROJECT_NAME }}-frontend" >> $GITHUB_OUTPUT
+            echo "BACKEND_URL=${{ vars.BACKEND_URL_PROD }}" >> $GITHUB_OUTPUT
+            echo "FRONTEND_URL=${{ vars.FRONTEND_URL_PROD }}" >> $GITHUB_OUTPUT
+          else
+            echo "PROJECT_NAME=${{ vars.PROJECT_NAME }}-frontend-dev" >> $GITHUB_OUTPUT
+            echo "BACKEND_URL=${{ vars.BACKEND_URL_DEV }}" >> $GITHUB_OUTPUT
+            echo "FRONTEND_URL=${{ vars.FRONTEND_URL_DEV }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --prefer-offline
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_BACKEND_URL: ${{ steps.env.outputs.BACKEND_URL }}
+          VITE_FRONTEND_URL: ${{ steps.env.outputs.FRONTEND_URL }}
+
+      - name: Create Cloudflare Pages Project (if not exists)
+        working-directory: frontend
+        continue-on-error: true
+        run: npx wrangler pages project create ${{ steps.env.outputs.PROJECT_NAME }} --production-branch=${{ github.ref_name }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy to Cloudflare Pages
+        working-directory: frontend
+        run: npx wrangler pages deploy dist --project-name=${{ steps.env.outputs.PROJECT_NAME }} --branch=${{ github.ref_name }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

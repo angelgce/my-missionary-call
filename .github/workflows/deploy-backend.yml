@@ -1,0 +1,89 @@
+name: Deploy Backend to Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Backend (${{ github.ref_name }})
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Set environment for migrations
+        id: migration-env
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL_PROD }}" >> $GITHUB_OUTPUT
+          else
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL_DEV }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run database migrations
+        working-directory: backend
+        run: npm run drizzle:migrate
+        env:
+          DATABASE_URL: ${{ steps.migration-env.outputs.DATABASE_URL }}
+
+      - name: Set environment
+        id: env
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "ENV_FLAG=--env production" >> $GITHUB_OUTPUT
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL_PROD }}" >> $GITHUB_OUTPUT
+          else
+            echo "ENV_FLAG=" >> $GITHUB_OUTPUT
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL_DEV }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create KV namespace (if not exists)
+        working-directory: backend
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            KV_NAME="backend-prod-KV"
+          else
+            KV_NAME="backend-dev-KV"
+          fi
+          EXISTING=$(npx wrangler kv namespace list 2>/dev/null | grep -o "\"id\":\"[^\"]*\"" | head -1 | grep "$KV_NAME" || true)
+          if [ -z "$EXISTING" ]; then
+            npx wrangler kv namespace create KV ${{ steps.env.outputs.ENV_FLAG }} || true
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy to Cloudflare Workers
+        working-directory: backend
+        run: npx wrangler deploy ${{ steps.env.outputs.ENV_FLAG }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Set Worker Secrets
+        working-directory: backend
+        run: |
+          echo "${{ secrets.JWT_SECRET }}" | npx wrangler secret put JWT_SECRET ${{ steps.env.outputs.ENV_FLAG }}
+          echo "${{ steps.env.outputs.DATABASE_URL }}" | npx wrangler secret put DATABASE_URL ${{ steps.env.outputs.ENV_FLAG }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        continue-on-error: true
