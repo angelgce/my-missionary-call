@@ -1,4 +1,4 @@
-name = "backend"
+name = "alexa-mission-backend"
 main = "src/worker.ts"
 compatibility_date = "2024-11-01"
 
@@ -28,7 +28,7 @@ bucket_name = "alexa"
 # id = "your-hyperdrive-id"
 
 [env.dev]
-name = "backend-dev"
+name = "alexa-mission-backend-dev"
 
 [[env.dev.kv_namespaces]]
 binding = "KV"
@@ -42,7 +42,7 @@ bucket_name = "alexa"
 binding = "AI"
 
 [env.production]
-name = "backend-prod"
+name = "alexa-mission-backend-prod"
 
 [[env.production.kv_namespaces]]
 binding = "KV"

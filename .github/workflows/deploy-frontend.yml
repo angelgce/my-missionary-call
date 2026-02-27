@@ -30,12 +30,12 @@ jobs:
         run: |
           if [ "${{ github.ref_name }}" == "main" ]; then
             echo "PROJECT_NAME=alexa-mission-frontend" >> $GITHUB_OUTPUT
-            echo "BACKEND_URL=${{ vars.BACKEND_URL_PROD }}" >> $GITHUB_OUTPUT
-            echo "FRONTEND_URL=${{ vars.FRONTEND_URL_PROD }}" >> $GITHUB_OUTPUT
+            echo "BACKEND_URL=https://alexa-mission-backend-prod.angelgce-chavez.workers.dev" >> $GITHUB_OUTPUT
+            echo "FRONTEND_URL=https://alexa-mission-frontend.pages.dev" >> $GITHUB_OUTPUT
           else
             echo "PROJECT_NAME=alexa-mission-frontend-dev" >> $GITHUB_OUTPUT
-            echo "BACKEND_URL=${{ vars.BACKEND_URL_DEV }}" >> $GITHUB_OUTPUT
-            echo "FRONTEND_URL=${{ vars.FRONTEND_URL_DEV }}" >> $GITHUB_OUTPUT
+            echo "BACKEND_URL=https://alexa-mission-backend-dev.angelgce-chavez.workers.dev" >> $GITHUB_OUTPUT
+            echo "FRONTEND_URL=https://alexa-mission-frontend-dev.pages.dev" >> $GITHUB_OUTPUT
           fi
 
       - name: Install dependencies
