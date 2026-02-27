@@ -783,9 +783,9 @@ function AdminDashboardPage() {
                       <td className="px-4 py-3 font-medium text-navy">
                         {showAdvices ? a.guestName : censor(a.guestName)}
                       </td>
-                      <td className="max-w-xs px-4 py-3 text-slate">
+                      <td className="px-4 py-3 text-slate">
                         {showAdvices ? (
-                          <span className="line-clamp-2">{a.advice}</span>
+                          <span className="whitespace-pre-wrap">{a.advice}</span>
                         ) : censor(a.advice)}
                       </td>
                       <td className="px-4 py-3 text-slate/60 hidden tablet:table-cell">

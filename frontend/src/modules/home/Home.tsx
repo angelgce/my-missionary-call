@@ -76,6 +76,8 @@ function Home() {
   const [eventSettings, setEventSettings] = useState<{ openingDate: string; locationAddress: string; locationUrl: string } | null>(null);
   const marqueeContainerRef = useRef<HTMLDivElement>(null);
   const marqueeContentRef = useRef<HTMLDivElement>(null);
+  const predictRef = useRef<HTMLDivElement>(null);
+  const adviceRef = useRef<HTMLDivElement>(null);
 
   // Redux selectors
   const dispatch = useAppDispatch();
@@ -146,6 +148,18 @@ function Home() {
     if (!container || !content) return;
     setShouldScroll(content.scrollWidth > container.clientWidth);
   }, [predictions, adviceEntries]);
+
+  useEffect(() => {
+    if (showPredict && predictRef.current) {
+      predictRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [showPredict]);
+
+  useEffect(() => {
+    if (showAdvice && adviceRef.current) {
+      adviceRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [showAdvice]);
 
 
   // Event handlers
@@ -546,7 +560,7 @@ function Home() {
 
       {/* Predict inline */}
       {showPredict && (
-        <div className="relative z-10 mt-6 w-full animate-fade-in tablet:mt-8">
+        <div ref={predictRef} className="relative z-10 mt-6 w-full animate-fade-in tablet:mt-8">
           <button
             onClick={() => setShowPredict(false)}
             className="mb-4 flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-gold transition-colors hover:text-gold-dark"
@@ -564,7 +578,7 @@ function Home() {
 
       {/* Advice inline */}
       {showAdvice && (
-        <div className="relative z-10 mt-6 w-full animate-fade-in tablet:mt-8">
+        <div ref={adviceRef} className="relative z-10 mt-6 w-full animate-fade-in tablet:mt-8">
           <button
             onClick={() => setShowAdvice(false)}
             className="mb-4 flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-gold transition-colors hover:text-gold-dark"
