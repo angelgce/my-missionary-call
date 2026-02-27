@@ -73,6 +73,8 @@ function AdminDashboardPage() {
   const [locationAddress, setLocationAddress] = useState('');
   const [locationUrl, setLocationUrl] = useState('');
   const [savingEventSettings, setSavingEventSettings] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; type: 'prediction' | 'advice' } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Redux selectors
   const { isAuthenticated } = useSelector((state: RootState) => state.admin);
@@ -302,6 +304,25 @@ function AdminDashboardPage() {
   const handleCancelEditName = () => {
     setEditingName(false);
     setEditedName('');
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm) return;
+    setDeleting(true);
+    try {
+      if (deleteConfirm.type === 'prediction') {
+        await api.delete(`/predictions/${deleteConfirm.id}`);
+        setPredictions((prev) => prev.filter((p) => p.id !== deleteConfirm.id));
+      } else {
+        await api.delete(`/advice/${deleteConfirm.id}`);
+        setAdvices((prev) => prev.filter((a) => a.id !== deleteConfirm.id));
+      }
+    } catch {
+      setMessage(deleteConfirm.type === 'prediction' ? 'Error al eliminar predicción' : 'Error al eliminar consejo');
+    } finally {
+      setDeleting(false);
+      setDeleteConfirm(null);
+    }
   };
 
   const handleLogout = () => {
@@ -672,6 +693,7 @@ function AdminDashboardPage() {
                     <th className="px-4 py-3">Estado</th>
                     <th className="px-4 py-3 hidden tablet:table-cell">IP</th>
                     <th className="px-4 py-3">Fecha</th>
+                    <th className="px-4 py-3 text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-rose-soft bg-warm-white">
@@ -691,6 +713,18 @@ function AdminDashboardPage() {
                       </td>
                       <td className="px-4 py-3 text-slate/60">
                         {new Date(p.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => setDeleteConfirm({ id: p.id, type: 'prediction' })}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate/40 transition-colors hover:bg-rose-soft hover:text-gold-dark"
+                          aria-label="Eliminar predicción"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                          </svg>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -740,6 +774,7 @@ function AdminDashboardPage() {
                     <th className="px-4 py-3">Consejo</th>
                     <th className="px-4 py-3 hidden tablet:table-cell">IP</th>
                     <th className="px-4 py-3">Fecha</th>
+                    <th className="px-4 py-3 text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-rose-soft bg-warm-white">
@@ -759,6 +794,18 @@ function AdminDashboardPage() {
                       <td className="px-4 py-3 text-slate/60">
                         {new Date(a.createdAt).toLocaleDateString()}
                       </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => setDeleteConfirm({ id: a.id, type: 'advice' })}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate/40 transition-colors hover:bg-rose-soft hover:text-gold-dark"
+                          aria-label="Eliminar consejo"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                          </svg>
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -767,6 +814,47 @@ function AdminDashboardPage() {
           )}
         </div>
       </div>
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={() => !deleting && setDeleteConfirm(null)}
+        >
+          <div
+            className="mx-4 w-full max-w-sm animate-fade-in rounded-2xl border border-rose-soft bg-warm-white p-6 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-soft/50">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#BE6B84" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+              </svg>
+            </div>
+            <h3 className="font-serif text-lg font-bold text-navy">
+              {deleteConfirm.type === 'prediction' ? '¿Eliminar predicción?' : '¿Eliminar consejo?'}
+            </h3>
+            <p className="mt-2 text-sm text-slate">
+              Esta acción no se puede deshacer.
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleting}
+                className="flex-1 rounded-full border border-rose-soft px-4 py-2.5 text-sm font-medium text-slate transition-colors hover:bg-cream disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+                className="flex-1 rounded-full bg-gold-dark px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-gold disabled:opacity-50"
+              >
+                {deleting ? 'Eliminando...' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageContainer>
   );
 }

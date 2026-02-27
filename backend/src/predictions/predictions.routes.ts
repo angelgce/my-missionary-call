@@ -65,4 +65,16 @@ export const predictionsRoutes = new Hono<{ Bindings: Env }>()
 
     const predictions = await service.getAllAdmin();
     return c.json(predictions);
+  })
+  .delete('/:id', authMiddleware, async (c) => {
+    const id = c.req.param('id');
+    const db = getDb(c.env.DATABASE_URL);
+    const repo = new PredictionsRepository(db);
+    const service = new PredictionsService(repo);
+
+    const deleted = await service.deleteById(id);
+    if (!deleted) {
+      return c.json({ message: 'Not found' }, 404);
+    }
+    return c.json({ deleted: true });
   });

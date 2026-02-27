@@ -86,6 +86,14 @@ export class PredictionsRepository {
       .orderBy(desc(predictions.createdAt));
   }
 
+  async deleteById(id: string) {
+    const results = await this.db
+      .delete(predictions)
+      .where(eq(predictions.id, id))
+      .returning();
+    return results[0] ?? null;
+  }
+
   async findAllAdmin() {
     return this.db
       .select({

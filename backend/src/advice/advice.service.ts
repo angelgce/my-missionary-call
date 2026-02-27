@@ -24,4 +24,8 @@ export class AdviceService {
   async getAllAdmin() {
     return this.repo.findAllAdmin();
   }
+
+  async deleteById(id: string) {
+    return this.repo.deleteById(id);
+  }
 }

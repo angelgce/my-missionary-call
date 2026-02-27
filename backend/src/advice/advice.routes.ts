@@ -55,4 +55,16 @@ export const adviceRoutes = new Hono<{ Bindings: Env }>()
 
     const advices = await service.getAllAdmin();
     return c.json(advices);
+  })
+  .delete('/:id', authMiddleware, async (c) => {
+    const id = c.req.param('id');
+    const db = getDb(c.env.DATABASE_URL);
+    const repo = new AdviceRepository(db);
+    const service = new AdviceService(repo);
+
+    const deleted = await service.deleteById(id);
+    if (!deleted) {
+      return c.json({ message: 'Not found' }, 404);
+    }
+    return c.json({ deleted: true });
   });

@@ -73,6 +73,14 @@ export class AdviceRepository {
       .orderBy(desc(adviceBox.createdAt));
   }
 
+  async deleteById(id: string) {
+    const results = await this.db
+      .delete(adviceBox)
+      .where(eq(adviceBox.id, id))
+      .returning();
+    return results[0] ?? null;
+  }
+
   async findAllAdmin() {
     return this.db
       .select({
