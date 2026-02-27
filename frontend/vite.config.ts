@@ -9,6 +9,17 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          maplibre: ['maplibre-gl'],
+          pdfjs: ['pdfjs-dist'],
+          geodata: ['country-state-city'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     allowedHosts: true,

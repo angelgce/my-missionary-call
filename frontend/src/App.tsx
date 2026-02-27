@@ -1,24 +1,28 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 
 import Home from '@/modules/home/Home';
-import PredictPage from '@/modules/predict/PredictPage';
-import RevelationPage from '@/modules/revelation/RevelationPage';
-import AdvicePage from '@/modules/advice/AdvicePage';
-import AdminAdvicePage from '@/modules/advice/AdminAdvicePage';
-import AdminLoginPage from '@/modules/admin/AdminLoginPage';
-import AdminDashboardPage from '@/modules/admin/AdminDashboardPage';
+
+const PredictPage = lazy(() => import('@/modules/predict/PredictPage'));
+const RevelationPage = lazy(() => import('@/modules/revelation/RevelationPage'));
+const AdvicePage = lazy(() => import('@/modules/advice/AdvicePage'));
+const AdminAdvicePage = lazy(() => import('@/modules/advice/AdminAdvicePage'));
+const AdminLoginPage = lazy(() => import('@/modules/admin/AdminLoginPage'));
+const AdminDashboardPage = lazy(() => import('@/modules/admin/AdminDashboardPage'));
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/predict" element={<PredictPage />} />
-      <Route path="/advice" element={<AdvicePage />} />
-      <Route path="/revelation" element={<RevelationPage />} />
-      <Route path="/consejos" element={<AdminAdvicePage />} />
-      <Route path="/admin" element={<AdminLoginPage />} />
-      <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-    </Routes>
+    <Suspense fallback={null}>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/predict" element={<PredictPage />} />
+        <Route path="/advice" element={<AdvicePage />} />
+        <Route path="/revelation" element={<RevelationPage />} />
+        <Route path="/consejos" element={<AdminAdvicePage />} />
+        <Route path="/admin" element={<AdminLoginPage />} />
+        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+      </Routes>
+    </Suspense>
   );
 }
 
