@@ -100,7 +100,7 @@ function WorldMap({
       });
     } else {
       map.flyTo({
-        center: [0, 20],
+        center: [-85, 15],
         zoom: 1.5,
         duration: 800,
       });
@@ -257,8 +257,8 @@ function WorldMap({
       <Map
         ref={mapRef}
         initialViewState={{
-          longitude: 0,
-          latitude: 20,
+          longitude: -85,
+          latitude: 15,
           zoom: 1.5,
         }}
         style={{ width: '100%', height: 420 }}
