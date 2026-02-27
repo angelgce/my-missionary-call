@@ -29,9 +29,15 @@ const app = new Hono<{ Bindings: Env }>();
 // Middleware
 app.use('*', logger());
 app.use('*', cors({
-  origin: (origin, c) => {
-    const allowed = c.env.FRONTEND_HOST || 'http://localhost:5173';
-    return origin === allowed ? origin : '';
+  origin: (origin) => {
+    const allowed = [
+      'https://aletaraz.com',
+      'https://www.aletaraz.com',
+      'https://alexa-mission-frontend.pages.dev',
+      'https://alexa-mission-frontend-dev.pages.dev',
+      'http://localhost:5173',
+    ];
+    return allowed.includes(origin) ? origin : '';
   },
   credentials: true,
 }));
