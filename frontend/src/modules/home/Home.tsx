@@ -109,13 +109,15 @@ function Home() {
   useEffect(() => {
     const fetchRevelation = async () => {
       try {
-        const [revRes, settingsRes] = await Promise.all([
-          api.get('/revelation'),
-          api.get('/revelation/event-settings').catch(() => null),
-        ]);
+        const revRes = await api.get('/revelation');
         if (revRes.data) {
           setData(revRes.data);
         }
+      } catch {
+        // silently fail
+      }
+      try {
+        const settingsRes = await api.get('/revelation/event-settings');
         if (settingsRes?.data) {
           setEventSettings(settingsRes.data);
         }
@@ -457,6 +459,7 @@ function Home() {
                 return (
                   <div className="mt-3 overflow-hidden rounded-lg border border-rose-soft">
                     <iframe
+                      key={embedSrc}
                       src={embedSrc}
                       width="100%"
                       height="150"
