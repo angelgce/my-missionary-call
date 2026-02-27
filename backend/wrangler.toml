@@ -30,13 +30,27 @@ bucket_name = "alexa"
 [env.dev]
 name = "backend-dev"
 
-[env.dev.kv_namespaces]
+[[env.dev.kv_namespaces]]
 binding = "KV"
 id = "KV_DEV_NAMESPACE_ID"
+
+[[env.dev.r2_buckets]]
+binding = "R2"
+bucket_name = "alexa"
+
+[env.dev.ai]
+binding = "AI"
 
 [env.production]
 name = "backend-prod"
 
-[env.production.kv_namespaces]
+[[env.production.kv_namespaces]]
 binding = "KV"
 id = "KV_PROD_NAMESPACE_ID"
+
+[[env.production.r2_buckets]]
+binding = "R2"
+bucket_name = "alexa"
+
+[env.production.ai]
+binding = "AI"
