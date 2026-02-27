@@ -29,11 +29,11 @@ jobs:
         id: env
         run: |
           if [ "${{ github.ref_name }}" == "main" ]; then
-            echo "PROJECT_NAME=${{ vars.PROJECT_NAME }}-frontend" >> $GITHUB_OUTPUT
+            echo "PROJECT_NAME=alexa-mission-frontend" >> $GITHUB_OUTPUT
             echo "BACKEND_URL=${{ vars.BACKEND_URL_PROD }}" >> $GITHUB_OUTPUT
             echo "FRONTEND_URL=${{ vars.FRONTEND_URL_PROD }}" >> $GITHUB_OUTPUT
           else
-            echo "PROJECT_NAME=${{ vars.PROJECT_NAME }}-frontend-dev" >> $GITHUB_OUTPUT
+            echo "PROJECT_NAME=alexa-mission-frontend-dev" >> $GITHUB_OUTPUT
             echo "BACKEND_URL=${{ vars.BACKEND_URL_DEV }}" >> $GITHUB_OUTPUT
             echo "FRONTEND_URL=${{ vars.FRONTEND_URL_DEV }}" >> $GITHUB_OUTPUT
           fi

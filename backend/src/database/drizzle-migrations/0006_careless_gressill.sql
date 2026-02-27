@@ -1,3 +1,11 @@
-ALTER TABLE "revelation" ADD COLUMN "opening_date" text DEFAULT '';--> statement-breakpoint
-ALTER TABLE "revelation" ADD COLUMN "location_address" text DEFAULT '';--> statement-breakpoint
-ALTER TABLE "revelation" ADD COLUMN "location_url" text DEFAULT '';
+DO $$ BEGIN
+  ALTER TABLE "revelation" ADD COLUMN IF NOT EXISTS "opening_date" text DEFAULT '';
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "revelation" ADD COLUMN IF NOT EXISTS "location_address" text DEFAULT '';
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "revelation" ADD COLUMN IF NOT EXISTS "location_url" text DEFAULT '';
+END $$;

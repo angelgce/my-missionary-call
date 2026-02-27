@@ -1,4 +1,4 @@
-CREATE TABLE "advice_box" (
+CREATE TABLE IF NOT EXISTS "advice_box" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
 	"guest_name" text DEFAULT '' NOT NULL,
@@ -8,5 +8,11 @@ CREATE TABLE "advice_box" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "predictions" ADD COLUMN "guest_name" text DEFAULT '' NOT NULL;--> statement-breakpoint
-ALTER TABLE "advice_box" ADD CONSTRAINT "advice_box_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+DO $$ BEGIN
+  ALTER TABLE "predictions" ADD COLUMN IF NOT EXISTS "guest_name" text DEFAULT '' NOT NULL;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "advice_box" ADD CONSTRAINT "advice_box_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

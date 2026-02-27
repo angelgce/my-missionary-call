@@ -1,5 +1,19 @@
-ALTER TABLE "predictions" ADD COLUMN "city" text NOT NULL DEFAULT '';--> statement-breakpoint
-ALTER TABLE "predictions" ADD COLUMN "session_id" text NOT NULL DEFAULT '';--> statement-breakpoint
-ALTER TABLE "predictions" ADD COLUMN "latitude" text;--> statement-breakpoint
-ALTER TABLE "predictions" ADD COLUMN "longitude" text;--> statement-breakpoint
-ALTER TABLE "predictions" ADD COLUMN "ip_address" text;
+DO $$ BEGIN
+  ALTER TABLE "predictions" ADD COLUMN IF NOT EXISTS "city" text NOT NULL DEFAULT '';
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "predictions" ADD COLUMN IF NOT EXISTS "session_id" text NOT NULL DEFAULT '';
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "predictions" ADD COLUMN IF NOT EXISTS "latitude" text;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "predictions" ADD COLUMN IF NOT EXISTS "longitude" text;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "predictions" ADD COLUMN IF NOT EXISTS "ip_address" text;
+END $$;
