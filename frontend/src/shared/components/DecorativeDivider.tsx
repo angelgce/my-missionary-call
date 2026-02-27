@@ -18,7 +18,7 @@ function DecorativeDivider({ className = '' }: DecorativeDividerProps) {
           fill="currentColor"
         />
       </svg>
-      <div className="h-px w-12 bg-gold/40" />
+      <div className="h-px w-12  bg-gold/40" />
     </div>
   );
 }
