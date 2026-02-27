@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// VITE_BACKEND_URL is injected at build time by the deploy-frontend.yml workflow
+// VITE_BACKEND_URL injected at build time via deploy-frontend.yml (per branch)
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_BACKEND_URL || ''}/api`,
   headers: { 'Content-Type': 'application/json' },
