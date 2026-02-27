@@ -33,9 +33,9 @@ jobs:
         id: migration-env
         run: |
           if [ "${{ github.ref_name }}" == "main" ]; then
-            echo "DATABASE_URL=${{ secrets.DATABASE_URL_PROD }}" >> $GITHUB_OUTPUT
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_OUTPUT
           else
-            echo "DATABASE_URL=${{ secrets.DATABASE_URL_DEV }}" >> $GITHUB_OUTPUT
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Run database migrations
@@ -49,10 +49,10 @@ jobs:
         run: |
           if [ "${{ github.ref_name }}" == "main" ]; then
             echo "ENV_FLAG=--env production" >> $GITHUB_OUTPUT
-            echo "DATABASE_URL=${{ secrets.DATABASE_URL_PROD }}" >> $GITHUB_OUTPUT
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_OUTPUT
           else
             echo "ENV_FLAG=" >> $GITHUB_OUTPUT
-            echo "DATABASE_URL=${{ secrets.DATABASE_URL_DEV }}" >> $GITHUB_OUTPUT
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Create KV namespace (if not exists)
