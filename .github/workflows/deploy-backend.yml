@@ -50,9 +50,11 @@ jobs:
           if [ "${{ github.ref_name }}" == "main" ]; then
             echo "ENV_FLAG=--env production" >> $GITHUB_OUTPUT
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_OUTPUT
+            echo "FRONTEND_HOST=https://alexa-mission-frontend.pages.dev" >> $GITHUB_OUTPUT
           else
             echo "ENV_FLAG=" >> $GITHUB_OUTPUT
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_OUTPUT
+            echo "FRONTEND_HOST=https://alexa-mission-frontend-dev.pages.dev" >> $GITHUB_OUTPUT
           fi
 
       - name: Create KV namespace (if not exists)
@@ -90,6 +92,7 @@ jobs:
         run: |
           echo "${{ secrets.JWT_SECRET }}" | npx wrangler secret put JWT_SECRET ${{ steps.env.outputs.ENV_FLAG }}
           echo "${{ steps.env.outputs.DATABASE_URL }}" | npx wrangler secret put DATABASE_URL ${{ steps.env.outputs.ENV_FLAG }}
+          echo "${{ steps.env.outputs.FRONTEND_HOST }}" | npx wrangler secret put FRONTEND_HOST ${{ steps.env.outputs.ENV_FLAG }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
