@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, asc } from 'drizzle-orm';
 import { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 
 import { revelation } from '../database/drizzle-schema/schema.schema';
@@ -7,7 +7,11 @@ export class RevelationRepository {
   constructor(private db: NeonHttpDatabase) {}
 
   async findFirst() {
-    const results = await this.db.select().from(revelation).limit(1);
+    const results = await this.db
+      .select()
+      .from(revelation)
+      .orderBy(asc(revelation.createdAt))
+      .limit(1);
     return results[0] ?? null;
   }
 
