@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 
 import { Prediction } from '@/core/store/slices/predictionSlice';
 import { haversineDistance } from '@/core/utils/haversine';
 
 import PageContainer from '@/shared/components/PageContainer';
-import WorldMap from '@/modules/predict/components/WorldMap';
+
+const WorldMap = lazy(() => import('@/modules/predict/components/WorldMap'));
 
 interface ResultsViewProps {
   predictions: Prediction[];
@@ -152,17 +153,19 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
 
       {/* Map */}
       <div className="mb-8">
-        <WorldMap
-          selectedCountryCode=""
-          selectedStateCode=""
-          selectedCity=""
-          countryCenter={null}
-          states={[]}
-          cities={[]}
-          predictions={predictions}
-          destination={destination}
-          showLines={true}
-        />
+        <Suspense fallback={null}>
+          <WorldMap
+            selectedCountryCode=""
+            selectedStateCode=""
+            selectedCity=""
+            countryCenter={null}
+            states={[]}
+            cities={[]}
+            predictions={predictions}
+            destination={destination}
+            showLines={true}
+          />
+        </Suspense>
       </div>
 
       {/* Top 3 Podium */}

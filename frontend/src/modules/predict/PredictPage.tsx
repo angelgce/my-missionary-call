@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 
 import { useSelector } from 'react-redux';
 import { Country, State } from 'country-state-city';
@@ -19,8 +19,9 @@ import {
 
 import PageContainer from '@/shared/components/PageContainer';
 import DecorativeDivider from '@/shared/components/DecorativeDivider';
-import WorldMap from './components/WorldMap';
 import LocationSelector from './components/LocationSelector';
+
+const WorldMap = lazy(() => import('./components/WorldMap'));
 
 import { useCountryData } from './hooks/useCountryData';
 
@@ -214,19 +215,20 @@ function PredictPage() {
         <div className="flex flex-col gap-6 tablet:flex-row">
           {/* Map — always left half on tablet+ */}
           <div className="tablet:w-1/2">
-            <WorldMap
-              selectedCountryCode={selectedCountryCode}
-              selectedStateCode={selectedStateCode}
-              selectedCity={selectedCity}
-              countryCenter={countryCenter}
-              states={states}
-              cities={cities}
-              predictions={predictions}
-              highlightedPredictionId={highlightedPredictionId}
-              focusCoords={focusCoords}
-              onMapClick={handleMapClick}
-              onStateClick={handleStateClick}
-              onBackToWorld={handleBackToWorld}
+            <Suspense fallback={null}>
+              <WorldMap
+                selectedCountryCode={selectedCountryCode}
+                selectedStateCode={selectedStateCode}
+                selectedCity={selectedCity}
+                countryCenter={countryCenter}
+                states={states}
+                cities={cities}
+                predictions={predictions}
+                highlightedPredictionId={highlightedPredictionId}
+                focusCoords={focusCoords}
+                onMapClick={handleMapClick}
+                onStateClick={handleStateClick}
+                onBackToWorld={handleBackToWorld}
               onCoordinatesChange={handleCoordinatesChange}
               initialPin={
                 prefilled && latitude && longitude
@@ -234,6 +236,7 @@ function PredictPage() {
                   : undefined
               }
             />
+            </Suspense>
             <p className="mt-2 text-center text-xs text-slate/60">
               {selectedCountryCode
                 ? 'Haz clic en el mapa para colocar tu pin'
