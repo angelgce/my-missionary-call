@@ -17,6 +17,10 @@ binding = "AI"
 binding = "KV"
 id = "KV_NAMESPACE_ID"
 
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "alexa"
+
 # Uncomment and configure as needed:
 
 # [[hyperdrive]]

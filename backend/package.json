@@ -12,10 +12,12 @@
     "drizzle:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "hono": "^4.6.0",
+    "@aws-sdk/client-s3": "^3.999.0",
+    "@aws-sdk/s3-request-presigner": "^3.999.0",
     "@hono/zod-validator": "^0.4.1",
-    "drizzle-orm": "^0.44.0",
     "@neondatabase/serverless": "^0.10.0",
+    "drizzle-orm": "^0.44.0",
+    "hono": "^4.6.0",
     "jose": "^5.9.0",
     "zod": "^3.23.0"
   },

@@ -1,0 +1,1 @@
+ALTER TABLE "revelation" ADD COLUMN "normalized_pdf_text" text DEFAULT '' NOT NULL;

@@ -1,0 +1,1 @@
+ALTER TABLE "revelation" ADD COLUMN "pdf_text" text DEFAULT '' NOT NULL;

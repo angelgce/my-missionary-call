@@ -5,12 +5,16 @@ interface BlurredFieldProps {
 }
 
 function BlurredField({ text, isRevealed = false, className = '' }: BlurredFieldProps) {
+  if (!isRevealed) {
+    return (
+      <span className={`inline-block select-none text-slate/20 ${className}`}>
+        {'•'.repeat(text.length > 20 ? 20 : text.length)}
+      </span>
+    );
+  }
+
   return (
-    <span
-      className={`inline-block transition-all duration-1000 ${
-        isRevealed ? 'blur-0' : 'animate-blur-pulse select-none blur-[8px]'
-      } ${className}`}
-    >
+    <span className={`inline-block ${className}`}>
       {text}
     </span>
   );

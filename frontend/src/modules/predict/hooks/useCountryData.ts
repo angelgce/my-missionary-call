@@ -1,181 +1,175 @@
-interface CountryData {
-  name: string;
-  code: string;
-  regions: string[];
-}
+import { useMemo } from 'react';
 
-const countries: CountryData[] = [
-  {
-    name: 'Argentina',
-    code: 'ARG',
-    regions: ['Buenos Aires', 'Córdoba', 'Mendoza', 'Rosario', 'Salta', 'Tucumán'],
-  },
-  {
-    name: 'Australia',
-    code: 'AUS',
-    regions: ['Brisbane', 'Melbourne', 'Perth', 'Sydney', 'Adelaide'],
-  },
-  {
-    name: 'Bolivia',
-    code: 'BOL',
-    regions: ['Cochabamba', 'La Paz', 'Santa Cruz'],
-  },
-  {
-    name: 'Brasil',
-    code: 'BRA',
-    regions: [
-      'Belo Horizonte', 'Brasília', 'Campinas', 'Curitiba', 'Fortaleza',
-      'Manaus', 'Porto Alegre', 'Recife', 'Rio de Janeiro', 'Salvador', 'São Paulo',
-    ],
-  },
-  {
-    name: 'Canadá',
-    code: 'CAN',
-    regions: ['Calgary', 'Edmonton', 'Montreal', 'Toronto', 'Vancouver', 'Winnipeg'],
-  },
-  {
-    name: 'Chile',
-    code: 'CHL',
-    regions: ['Antofagasta', 'Concepción', 'Santiago', 'Viña del Mar'],
-  },
-  {
-    name: 'Colombia',
-    code: 'COL',
-    regions: ['Barranquilla', 'Bogotá', 'Cali', 'Medellín'],
-  },
-  {
-    name: 'Corea del Sur',
-    code: 'KOR',
-    regions: ['Busan', 'Daejeon', 'Seúl'],
-  },
-  {
-    name: 'Costa Rica',
-    code: 'CRI',
-    regions: ['San José'],
-  },
-  {
-    name: 'Ecuador',
-    code: 'ECU',
-    regions: ['Guayaquil', 'Quito'],
-  },
-  {
-    name: 'El Salvador',
-    code: 'SLV',
-    regions: ['San Salvador'],
-  },
-  {
-    name: 'España',
-    code: 'ESP',
-    regions: ['Barcelona', 'Madrid', 'Málaga'],
-  },
-  {
-    name: 'Estados Unidos',
-    code: 'USA',
-    regions: [
-      'Arizona', 'California', 'Colorado', 'Florida', 'Georgia', 'Idaho',
-      'Illinois', 'New York', 'Ohio', 'Oregon', 'Pennsylvania', 'Texas',
-      'Utah', 'Virginia', 'Washington',
-    ],
-  },
-  {
-    name: 'Filipinas',
-    code: 'PHL',
-    regions: ['Cebú', 'Davao', 'Manila', 'Quezon City'],
-  },
-  {
-    name: 'Francia',
-    code: 'FRA',
-    regions: ['Lyon', 'Marsella', 'París'],
-  },
-  {
-    name: 'Guatemala',
-    code: 'GTM',
-    regions: ['Ciudad de Guatemala', 'Quetzaltenango'],
-  },
-  {
-    name: 'Honduras',
-    code: 'HND',
-    regions: ['San Pedro Sula', 'Tegucigalpa'],
-  },
-  {
-    name: 'Italia',
-    code: 'ITA',
-    regions: ['Catania', 'Milán', 'Roma'],
-  },
-  {
-    name: 'Japón',
-    code: 'JPN',
-    regions: ['Fukuoka', 'Kobe', 'Nagoya', 'Sapporo', 'Tokio'],
-  },
-  {
-    name: 'México',
-    code: 'MEX',
-    regions: [
-      'Ciudad de México', 'Guadalajara', 'Hermosillo', 'León',
-      'Mérida', 'Monterrey', 'Oaxaca', 'Puebla', 'Tijuana', 'Veracruz',
-    ],
-  },
-  {
-    name: 'Nicaragua',
-    code: 'NIC',
-    regions: ['Managua'],
-  },
-  {
-    name: 'Panamá',
-    code: 'PAN',
-    regions: ['Ciudad de Panamá'],
-  },
-  {
-    name: 'Paraguay',
-    code: 'PRY',
-    regions: ['Asunción'],
-  },
-  {
-    name: 'Perú',
-    code: 'PER',
-    regions: ['Arequipa', 'Cusco', 'Lima', 'Trujillo'],
-  },
-  {
-    name: 'Portugal',
-    code: 'PRT',
-    regions: ['Lisboa', 'Porto'],
-  },
-  {
-    name: 'Puerto Rico',
-    code: 'PRI',
-    regions: ['San Juan'],
-  },
-  {
-    name: 'República Dominicana',
-    code: 'DOM',
-    regions: ['Santo Domingo'],
-  },
-  {
-    name: 'Uruguay',
-    code: 'URY',
-    regions: ['Montevideo'],
-  },
-  {
-    name: 'Venezuela',
-    code: 'VEN',
-    regions: ['Caracas', 'Maracaibo', 'Valencia'],
-  },
-];
+import { Country, State, City, ICountry, IState, ICity } from 'country-state-city';
+
+/**
+ * Mapping from world-atlas geo.properties.name → ISO alpha-2 code.
+ * Only needed for names that differ between world-atlas and country-state-city.
+ */
+const ATLAS_NAME_OVERRIDES: Record<string, string> = {
+  'United States of America': 'US',
+  'Dem. Rep. Congo': 'CD',
+  'Central African Rep.': 'CF',
+  'S. Sudan': 'SS',
+  'Bosnia and Herz.': 'BA',
+  'Czech Republic': 'CZ',
+  'Dominican Rep.': 'DO',
+  'Eq. Guinea': 'GQ',
+  'eSwatini': 'SZ',
+  'Falkland Is.': 'FK',
+  'Fr. S. Antarctic Lands': 'TF',
+  'N. Cyprus': 'CY',
+  'Solomon Is.': 'SB',
+  'W. Sahara': 'EH',
+  'Timor-Leste': 'TL',
+  'Korea': 'KR',
+  'Dem. Rep. Korea': 'KP',
+  "Côte d'Ivoire": 'CI',
+  'Macedonia': 'MK',
+  'North Macedonia': 'MK',
+};
 
 export function useCountryData() {
-  const getRegions = (countryName: string): string[] => {
-    const country = countries.find((c) => c.name === countryName);
-    return country?.regions ?? [];
+  const countries = useMemo(() => {
+    return Country.getAllCountries()
+      .map((c: ICountry) => ({
+        name: c.name,
+        isoCode: c.isoCode,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, []);
+
+  const nameToCodeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    countries.forEach((c) => {
+      map.set(c.name.toLowerCase(), c.isoCode);
+    });
+    return map;
+  }, [countries]);
+
+  const getStates = (countryCode: string): IState[] => {
+    if (!countryCode) return [];
+    return State.getStatesOfCountry(countryCode);
   };
 
-  const getCountryCode = (countryName: string): string => {
-    const country = countries.find((c) => c.name === countryName);
-    return country?.code ?? '';
+  const getCountryName = (isoCode: string): string => {
+    if (!isoCode) return '';
+    const country = Country.getCountryByCode(isoCode);
+    return country?.name ?? '';
+  };
+
+  /**
+   * Resolves a world-atlas geo.properties.name to an ISO alpha-2 code.
+   */
+  const resolveAtlasName = (atlasName: string): string => {
+    if (!atlasName) return '';
+
+    // Check override map first
+    if (ATLAS_NAME_OVERRIDES[atlasName]) {
+      return ATLAS_NAME_OVERRIDES[atlasName];
+    }
+
+    // Direct match (case-insensitive)
+    const direct = nameToCodeMap.get(atlasName.toLowerCase());
+    if (direct) return direct;
+
+    // Partial match: atlas name contains library name or vice versa
+    const atlasLower = atlasName.toLowerCase();
+    for (const [name, code] of nameToCodeMap) {
+      if (atlasLower.includes(name) || name.includes(atlasLower)) {
+        return code;
+      }
+    }
+
+    return '';
+  };
+
+  /**
+   * Finds nearest state by searching within the top 15 closest countries.
+   * Avoids bad global data (some libraries have wrong coords for distant countries)
+   * while still covering large countries like Mexico whose edges are far from center.
+   */
+  const findNearestLocation = (
+    lng: number,
+    lat: number
+  ): { countryCode: string; stateCode: string | null } | null => {
+    const allCountries = Country.getAllCountries();
+
+    // Top 15 countries by distance to click
+    const candidates = allCountries
+      .filter((c) => c.latitude && c.longitude)
+      .map((c) => ({
+        code: c.isoCode,
+        dist:
+          (lat - parseFloat(c.latitude!)) ** 2 +
+          (lng - parseFloat(c.longitude!)) ** 2,
+      }))
+      .sort((a, b) => a.dist - b.dist)
+      .slice(0, 15);
+
+    if (candidates.length === 0) return null;
+
+    let bestCountry = candidates[0].code;
+    let bestState: string | null = null;
+    let bestDist = Infinity;
+
+    for (const c of candidates) {
+      const states = State.getStatesOfCountry(c.code);
+      for (const s of states) {
+        if (!s.latitude || !s.longitude) continue;
+        const dist =
+          (lat - parseFloat(s.latitude)) ** 2 +
+          (lng - parseFloat(s.longitude)) ** 2;
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestCountry = c.code;
+          bestState = s.isoCode;
+        }
+      }
+    }
+
+    return { countryCode: bestCountry, stateCode: bestState };
+  };
+
+  const getCities = (countryCode: string, stateCode: string): ICity[] => {
+    if (!countryCode || !stateCode) return [];
+    return City.getCitiesOfState(countryCode, stateCode);
+  };
+
+  /**
+   * Finds the nearest city within a given country+state.
+   */
+  const findNearestCity = (
+    countryCode: string,
+    stateCode: string,
+    lng: number,
+    lat: number
+  ): string | null => {
+    const cities = City.getCitiesOfState(countryCode, stateCode);
+    let bestName: string | null = null;
+    let bestDist = Infinity;
+
+    for (const c of cities) {
+      if (!c.latitude || !c.longitude) continue;
+      const dist =
+        (lat - parseFloat(c.latitude)) ** 2 +
+        (lng - parseFloat(c.longitude)) ** 2;
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestName = c.name;
+      }
+    }
+
+    return bestName;
   };
 
   return {
     countries,
-    getRegions,
-    getCountryCode,
+    getStates,
+    getCities,
+    getCountryName,
+    resolveAtlasName,
+    findNearestLocation,
+    findNearestCity,
   };
 }
