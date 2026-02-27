@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 
 import confetti from 'canvas-confetti';
 
@@ -10,11 +10,12 @@ import PageContainer from '@/shared/components/PageContainer';
 import DecorativeDivider from '@/shared/components/DecorativeDivider';
 import SparkleBackground from '@/modules/home/components/SparkleBackground';
 import HintsChatModal from '@/modules/home/components/HintsChatModal';
-import WorldMap from '@/modules/predict/components/WorldMap';
-import PredictPage from '@/modules/predict/PredictPage';
-import AdvicePage from '@/modules/advice/AdvicePage';
+const WorldMap = lazy(() => import('@/modules/predict/components/WorldMap'));
 import LetterCover from '@/modules/revelation/components/LetterCover';
 import ResultsView from '@/modules/home/components/ResultsView';
+
+const PredictPage = lazy(() => import('@/modules/predict/PredictPage'));
+const AdvicePage = lazy(() => import('@/modules/advice/AdvicePage'));
 
 import { useHintsChat } from '@/modules/home/hooks/useHintsChat';
 
@@ -542,7 +543,9 @@ function Home() {
             </svg>
             Volver
           </button>
-          <PredictPage />
+          <Suspense fallback={null}>
+            <PredictPage />
+          </Suspense>
         </div>
       )}
 
@@ -558,7 +561,9 @@ function Home() {
             </svg>
             Volver
           </button>
-          <AdvicePage />
+          <Suspense fallback={null}>
+            <AdvicePage />
+          </Suspense>
         </div>
       )}
 
@@ -650,15 +655,17 @@ function Home() {
           {/* Map */}
           {predictions.length > 0 && (
             <div className="mt-3 px-4 tablet:mt-4 tablet:px-[10%] desktop:px-[15%]">
-              <WorldMap
-                selectedCountryCode=""
-                selectedStateCode=""
-                selectedCity=""
-                countryCenter={null}
-                states={[]}
-                cities={[]}
-                predictions={predictions}
-              />
+              <Suspense fallback={null}>
+                <WorldMap
+                  selectedCountryCode=""
+                  selectedStateCode=""
+                  selectedCity=""
+                  countryCenter={null}
+                  states={[]}
+                  cities={[]}
+                  predictions={predictions}
+                />
+              </Suspense>
             </div>
           )}
         </div>
