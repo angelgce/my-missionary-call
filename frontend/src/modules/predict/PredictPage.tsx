@@ -1,7 +1,6 @@
 import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 
 import { useSelector } from 'react-redux';
-import { Country, State } from 'country-state-city';
 
 import { RootState } from '@/core/store/store';
 import { useAppDispatch } from '@/core/hooks/useAppDispatch';
@@ -56,22 +55,13 @@ function PredictPage() {
   const dispatch = useAppDispatch();
 
   // Custom hooks
-  const { countries, getStates, getCities, getCountryName, findNearestLocation, findNearestCity } =
+  const { loading: geoLoading, countries, getStates, getCities, getCountryName, getCountryCenter, getStateName, findNearestLocation, findNearestCity } =
     useCountryData();
 
   // Computed values
   const states = getStates(selectedCountryCode);
   const cities = getCities(selectedCountryCode, selectedStateCode);
-  const countryCenter = selectedCountryCode
-    ? (() => {
-        const c = Country.getCountryByCode(selectedCountryCode);
-        if (!c?.latitude || !c?.longitude) return null;
-        return {
-          lat: parseFloat(c.latitude),
-          lng: parseFloat(c.longitude),
-        };
-      })()
-    : null;
+  const countryCenter = getCountryCenter(selectedCountryCode);
 
   const myPrediction = myPredictionId
     ? predictions.find((p) => p.id === myPredictionId)
@@ -132,8 +122,7 @@ function PredictPage() {
     if (hasErrors || submitting) return;
 
     const countryName = getCountryName(selectedCountryCode);
-    const stateObj = State.getStateByCodeAndCountry(selectedStateCode, selectedCountryCode);
-    const stateName = stateObj?.name ?? selectedStateCode;
+    const stateName = getStateName(selectedStateCode, selectedCountryCode);
 
     setSubmitting(true);
     try {

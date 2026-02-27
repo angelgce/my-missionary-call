@@ -1,4 +1,4 @@
-import { IState, ICity } from 'country-state-city';
+import type { IState, ICity } from 'country-state-city';
 
 interface LocationSelectorProps {
   countries: { name: string; isoCode: string }[];

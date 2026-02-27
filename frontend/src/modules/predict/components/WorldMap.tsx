@@ -7,7 +7,7 @@ import Map, {
   type MapLayerMouseEvent,
 } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { IState, ICity } from 'country-state-city';
+import type { IState, ICity } from 'country-state-city';
 
 import { Prediction } from '@/core/store/slices/predictionSlice';
 

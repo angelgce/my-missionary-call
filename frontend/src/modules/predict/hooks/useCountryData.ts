@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 
-import { Country, State, City, ICountry, IState, ICity } from 'country-state-city';
+import type { ICountry, IState, ICity } from 'country-state-city';
 
 /**
  * Mapping from world-atlas geo.properties.name → ISO alpha-2 code.
@@ -29,15 +29,30 @@ const ATLAS_NAME_OVERRIDES: Record<string, string> = {
   'North Macedonia': 'MK',
 };
 
+type CscModule = typeof import('country-state-city');
+
 export function useCountryData() {
+  const [csc, setCsc] = useState<CscModule | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    import('country-state-city')
+      .then((mod) => {
+        setCsc(mod);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
   const countries = useMemo(() => {
-    return Country.getAllCountries()
+    if (!csc) return [];
+    return csc.Country.getAllCountries()
       .map((c: ICountry) => ({
         name: c.name,
         isoCode: c.isoCode,
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, []);
+  }, [csc]);
 
   const nameToCodeMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -47,127 +62,154 @@ export function useCountryData() {
     return map;
   }, [countries]);
 
-  const getStates = (countryCode: string): IState[] => {
-    if (!countryCode) return [];
-    return State.getStatesOfCountry(countryCode);
-  };
+  const getStates = useCallback(
+    (countryCode: string): IState[] => {
+      if (!csc || !countryCode) return [];
+      return csc.State.getStatesOfCountry(countryCode);
+    },
+    [csc]
+  );
 
-  const getCountryName = (isoCode: string): string => {
-    if (!isoCode) return '';
-    const country = Country.getCountryByCode(isoCode);
-    return country?.name ?? '';
-  };
+  const getCountryName = useCallback(
+    (isoCode: string): string => {
+      if (!csc || !isoCode) return '';
+      const country = csc.Country.getCountryByCode(isoCode);
+      return country?.name ?? '';
+    },
+    [csc]
+  );
 
-  /**
-   * Resolves a world-atlas geo.properties.name to an ISO alpha-2 code.
-   */
-  const resolveAtlasName = (atlasName: string): string => {
-    if (!atlasName) return '';
+  const getCountryCenter = useCallback(
+    (isoCode: string): { lat: number; lng: number } | null => {
+      if (!csc || !isoCode) return null;
+      const c = csc.Country.getCountryByCode(isoCode);
+      if (!c?.latitude || !c?.longitude) return null;
+      return { lat: parseFloat(c.latitude), lng: parseFloat(c.longitude) };
+    },
+    [csc]
+  );
 
-    // Check override map first
-    if (ATLAS_NAME_OVERRIDES[atlasName]) {
-      return ATLAS_NAME_OVERRIDES[atlasName];
-    }
+  const getStateName = useCallback(
+    (stateCode: string, countryCode: string): string => {
+      if (!csc || !stateCode || !countryCode) return stateCode;
+      const stateObj = csc.State.getStateByCodeAndCountry(stateCode, countryCode);
+      return stateObj?.name ?? stateCode;
+    },
+    [csc]
+  );
 
-    // Direct match (case-insensitive)
-    const direct = nameToCodeMap.get(atlasName.toLowerCase());
-    if (direct) return direct;
+  const resolveAtlasName = useCallback(
+    (atlasName: string): string => {
+      if (!atlasName) return '';
 
-    // Partial match: atlas name contains library name or vice versa
-    const atlasLower = atlasName.toLowerCase();
-    for (const [name, code] of nameToCodeMap) {
-      if (atlasLower.includes(name) || name.includes(atlasLower)) {
-        return code;
+      if (ATLAS_NAME_OVERRIDES[atlasName]) {
+        return ATLAS_NAME_OVERRIDES[atlasName];
       }
-    }
 
-    return '';
-  };
+      const direct = nameToCodeMap.get(atlasName.toLowerCase());
+      if (direct) return direct;
 
-  /**
-   * Finds nearest state by searching within the top 15 closest countries.
-   * Avoids bad global data (some libraries have wrong coords for distant countries)
-   * while still covering large countries like Mexico whose edges are far from center.
-   */
-  const findNearestLocation = (
-    lng: number,
-    lat: number
-  ): { countryCode: string; stateCode: string | null } | null => {
-    const allCountries = Country.getAllCountries();
-
-    // Top 15 countries by distance to click
-    const candidates = allCountries
-      .filter((c) => c.latitude && c.longitude)
-      .map((c) => ({
-        code: c.isoCode,
-        dist:
-          (lat - parseFloat(c.latitude!)) ** 2 +
-          (lng - parseFloat(c.longitude!)) ** 2,
-      }))
-      .sort((a, b) => a.dist - b.dist)
-      .slice(0, 15);
-
-    if (candidates.length === 0) return null;
-
-    let bestCountry = candidates[0].code;
-    let bestState: string | null = null;
-    let bestDist = Infinity;
-
-    for (const c of candidates) {
-      const states = State.getStatesOfCountry(c.code);
-      for (const s of states) {
-        if (!s.latitude || !s.longitude) continue;
-        const dist =
-          (lat - parseFloat(s.latitude)) ** 2 +
-          (lng - parseFloat(s.longitude)) ** 2;
-        if (dist < bestDist) {
-          bestDist = dist;
-          bestCountry = c.code;
-          bestState = s.isoCode;
+      const atlasLower = atlasName.toLowerCase();
+      for (const [name, code] of nameToCodeMap) {
+        if (atlasLower.includes(name) || name.includes(atlasLower)) {
+          return code;
         }
       }
-    }
 
-    return { countryCode: bestCountry, stateCode: bestState };
-  };
+      return '';
+    },
+    [nameToCodeMap]
+  );
 
-  const getCities = (countryCode: string, stateCode: string): ICity[] => {
-    if (!countryCode || !stateCode) return [];
-    return City.getCitiesOfState(countryCode, stateCode);
-  };
+  const findNearestLocation = useCallback(
+    (
+      lng: number,
+      lat: number
+    ): { countryCode: string; stateCode: string | null } | null => {
+      if (!csc) return null;
+      const allCountries = csc.Country.getAllCountries();
 
-  /**
-   * Finds the nearest city within a given country+state.
-   */
-  const findNearestCity = (
-    countryCode: string,
-    stateCode: string,
-    lng: number,
-    lat: number
-  ): string | null => {
-    const cities = City.getCitiesOfState(countryCode, stateCode);
-    let bestName: string | null = null;
-    let bestDist = Infinity;
+      const candidates = allCountries
+        .filter((c) => c.latitude && c.longitude)
+        .map((c) => ({
+          code: c.isoCode,
+          dist:
+            (lat - parseFloat(c.latitude!)) ** 2 +
+            (lng - parseFloat(c.longitude!)) ** 2,
+        }))
+        .sort((a, b) => a.dist - b.dist)
+        .slice(0, 15);
 
-    for (const c of cities) {
-      if (!c.latitude || !c.longitude) continue;
-      const dist =
-        (lat - parseFloat(c.latitude)) ** 2 +
-        (lng - parseFloat(c.longitude)) ** 2;
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestName = c.name;
+      if (candidates.length === 0) return null;
+
+      let bestCountry = candidates[0].code;
+      let bestState: string | null = null;
+      let bestDist = Infinity;
+
+      for (const c of candidates) {
+        const states = csc.State.getStatesOfCountry(c.code);
+        for (const s of states) {
+          if (!s.latitude || !s.longitude) continue;
+          const dist =
+            (lat - parseFloat(s.latitude)) ** 2 +
+            (lng - parseFloat(s.longitude)) ** 2;
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestCountry = c.code;
+            bestState = s.isoCode;
+          }
+        }
       }
-    }
 
-    return bestName;
-  };
+      return { countryCode: bestCountry, stateCode: bestState };
+    },
+    [csc]
+  );
+
+  const getCities = useCallback(
+    (countryCode: string, stateCode: string): ICity[] => {
+      if (!csc || !countryCode || !stateCode) return [];
+      return csc.City.getCitiesOfState(countryCode, stateCode);
+    },
+    [csc]
+  );
+
+  const findNearestCity = useCallback(
+    (
+      countryCode: string,
+      stateCode: string,
+      lng: number,
+      lat: number
+    ): string | null => {
+      if (!csc) return null;
+      const cities = csc.City.getCitiesOfState(countryCode, stateCode);
+      let bestName: string | null = null;
+      let bestDist = Infinity;
+
+      for (const c of cities) {
+        if (!c.latitude || !c.longitude) continue;
+        const dist =
+          (lat - parseFloat(c.latitude)) ** 2 +
+          (lng - parseFloat(c.longitude)) ** 2;
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestName = c.name;
+        }
+      }
+
+      return bestName;
+    },
+    [csc]
+  );
 
   return {
+    loading,
     countries,
     getStates,
     getCities,
     getCountryName,
+    getCountryCenter,
+    getStateName,
     resolveAtlasName,
     findNearestLocation,
     findNearestCity,
