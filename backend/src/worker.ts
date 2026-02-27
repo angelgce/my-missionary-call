@@ -26,7 +26,7 @@ export type Env = {
 
 const app = new Hono<{ Bindings: Env }>();
 
-// Middleware
+// Middleware — CORS origins are hardcoded, no env dependency
 app.use('*', logger());
 app.use('*', cors({
   origin: (origin) => {
