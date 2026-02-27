@@ -59,6 +59,7 @@ export const revelationRoutes = new Hono<{ Bindings: Env }>()
     if (!settings) {
       return c.json({ error: 'No revelation found' }, 404);
     }
+    c.header('Cache-Control', 'no-store, no-cache, must-revalidate');
     return c.json(settings);
   })
   .put('/event-settings', authMiddleware, zValidator('json', eventSettingsSchema), async (c) => {
