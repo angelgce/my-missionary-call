@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useRef, useState } from 'react';
 
 import { Prediction } from '@/core/store/slices/predictionSlice';
 import { haversineDistance } from '@/core/utils/haversine';
@@ -13,7 +13,8 @@ const WorldMap = lazy(() => import('@/modules/predict/components/WorldMap'));
 interface ResultsViewProps {
   predictions: Prediction[];
   destination: { lat: number; lng: number; missionName: string };
-  onBack: () => void;
+  onBack?: () => void;
+  inline?: boolean;
 }
 
 interface RankedPrediction extends Prediction {
@@ -22,8 +23,9 @@ interface RankedPrediction extends Prediction {
 
 const MEDAL_COLORS = ['#BF9B30', '#C0C0C0', '#CD7F32'] as const;
 const MEDAL_LABELS = ['1er', '2do', '3er'] as const;
+const ITEMS_PER_PAGE = 10;
 
-function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
+function ResultsView({ predictions, destination, onBack, inline }: ResultsViewProps) {
   // Computed values
   const ranked = useMemo<RankedPrediction[]>(() => {
     return predictions
@@ -54,6 +56,29 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
     return Math.max(...rest.map((p) => p.distanceKm), 1);
   }, [rest]);
 
+  // Local state
+  const [rankingPage, setRankingPage] = useState(0);
+  const [focusCoords, setFocusCoords] = useState<{ lat: number; lng: number; key: number } | null>(null);
+  const mapCardRef = useRef<HTMLDivElement>(null);
+
+  // Event handlers
+  const handleFocusPrediction = useCallback((prediction: RankedPrediction) => {
+    if (!prediction.latitude || !prediction.longitude) return;
+    setFocusCoords({
+      lat: parseFloat(prediction.latitude),
+      lng: parseFloat(prediction.longitude),
+      key: Date.now(),
+    });
+    mapCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
+
+  // Computed values — pagination
+  const totalPages = Math.ceil(rest.length / ITEMS_PER_PAGE);
+  const pagedRest = rest.slice(
+    rankingPage * ITEMS_PER_PAGE,
+    (rankingPage + 1) * ITEMS_PER_PAGE
+  );
+
   // Render helpers
   const formatDistance = (km: number): string => {
     return Math.round(km).toLocaleString('es-MX');
@@ -62,17 +87,13 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
   const renderMedalIcon = (index: number, large?: boolean) => {
     const color = MEDAL_COLORS[index];
     const size = large
-      ? 'h-14 w-14 text-lg tablet:h-16 tablet:w-16 tablet:text-xl desktop:h-20 desktop:w-20 desktop:text-2xl'
-      : 'h-9 w-9 text-sm tablet:h-10 tablet:w-10';
-
-    const shadow = large
-      ? `0 4px 16px ${color}40`
-      : `0 2px 8px ${color}30`;
+      ? 'h-10 w-10 text-sm tablet:h-12 tablet:w-12 tablet:text-base'
+      : 'h-8 w-8 text-xs tablet:h-9 tablet:w-9';
 
     return (
       <div
         className={`flex shrink-0 items-center justify-center rounded-full font-bold text-white ${size}`}
-        style={{ backgroundColor: color, boxShadow: shadow }}
+        style={{ backgroundColor: color }}
       >
         {MEDAL_LABELS[index]}
       </div>
@@ -85,13 +106,13 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
     delay: number
   ) => (
     <div
-      className="animate-slide-up flex flex-col items-center rounded-2xl border border-rose-soft bg-warm-white px-3 py-5 text-center shadow-sm tablet:px-5 tablet:py-6 desktop:px-6 desktop:py-8"
+      className="animate-slide-up flex flex-col items-center rounded-xl border border-rose-soft bg-warm-white px-3 py-3.5 text-center tablet:px-4 tablet:py-4"
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
     >
-      <p className="font-serif text-xl font-bold text-navy tablet:text-2xl desktop:text-3xl">
+      <p className="font-serif text-lg font-bold text-navy tablet:text-xl">
         {value}
       </p>
-      <p className="mt-1.5 text-xs text-slate/60 tablet:text-sm">
+      <p className="mt-1 text-xs text-slate/60">
         {label}
       </p>
     </div>
@@ -102,44 +123,35 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
 
     return (
       <div
-        className="animate-slide-up rounded-3xl border-2 bg-warm-white p-6 text-center tablet:p-10 desktop:p-12"
+        className="animate-slide-up cursor-pointer rounded-2xl border-2 bg-warm-white p-5 text-center transition-shadow hover:shadow-md tablet:p-6"
         style={{
-          borderColor: 'rgba(191, 155, 48, 0.4)',
-          boxShadow:
-            '0 4px 24px rgba(191, 155, 48, 0.10), 0 1px 4px rgba(59, 33, 64, 0.04)',
+          borderColor: 'rgba(191, 155, 48, 0.35)',
           animationDelay: '400ms',
           animationFillMode: 'both',
         }}
+        onClick={() => handleFocusPrediction(winner)}
       >
-        {/* Decorative top accent line */}
-        <div
-          className="mx-auto mb-5 h-1 w-16 rounded-full tablet:mb-6 tablet:w-20"
-          style={{ backgroundColor: 'rgba(191, 155, 48, 0.35)' }}
-        />
-
         <div className="flex justify-center">{renderMedalIcon(0, true)}</div>
 
-        <p className="mt-1 text-xs font-medium uppercase tracking-widest text-slate/50 tablet:mt-2 tablet:text-sm">
+        <p className="mt-1 text-[10px] font-medium uppercase tracking-widest text-slate/50">
           Prediccion mas cercana
         </p>
 
-        <p className="mt-3 font-serif text-2xl font-bold text-navy tablet:mt-4 tablet:text-3xl desktop:text-4xl">
+        <p className="mt-2 font-serif text-xl font-bold text-navy tablet:text-2xl">
           {winner.guestName}
         </p>
-        <p className="mt-1.5 text-sm text-navy/70 tablet:text-base">
+        <p className="mt-1 text-sm text-navy/70">
           {winner.city}
           {winner.state ? `, ${winner.state}` : ''}
         </p>
-        <p className="text-xs text-slate/60 tablet:text-sm">
-          {winner.country}
-        </p>
+        <p className="text-xs text-slate/60">{winner.country}</p>
 
         <div
-          className="mx-auto mt-5 inline-block rounded-full px-6 py-2 tablet:mt-6 tablet:px-8 tablet:py-2.5"
+          className="mx-auto mt-3 inline-block rounded-full px-4 py-1.5"
           style={{ backgroundColor: 'rgba(191, 155, 48, 0.1)' }}
         >
           <p
-            className="text-base font-semibold tablet:text-lg"
+            className="text-sm font-semibold"
             style={{ color: '#BF9B30' }}
           >
             {formatDistance(winner.distanceKm)} km
@@ -156,28 +168,28 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
     return (
       <div
         key={prediction.id}
-        className="animate-slide-up flex flex-col items-center rounded-2xl border-2 bg-warm-white p-5 text-center shadow-sm tablet:p-6 desktop:p-7"
+        className="animate-slide-up flex cursor-pointer flex-col items-center rounded-xl border bg-warm-white p-4 text-center transition-shadow hover:shadow-md tablet:p-5"
         style={{
           borderColor: color,
-          boxShadow: `0 2px 12px ${color}12, 0 1px 3px rgba(59, 33, 64, 0.04)`,
           animationDelay: `${500 + index * 100}ms`,
           animationFillMode: 'both',
         }}
+        onClick={() => handleFocusPrediction(prediction)}
       >
         {renderMedalIcon(medalIndex)}
-        <p className="mt-3 font-serif text-lg font-bold text-navy tablet:text-xl">
+        <p className="mt-2 font-serif text-base font-bold text-navy">
           {prediction.guestName}
         </p>
-        <p className="mt-1 text-sm text-navy/70">
+        <p className="mt-0.5 text-xs text-navy/70">
           {prediction.city}
           {prediction.state ? `, ${prediction.state}` : ''}
         </p>
-        <p className="text-xs text-slate/60">{prediction.country}</p>
+        <p className="text-[11px] text-slate/60">{prediction.country}</p>
         <div
-          className="mt-3 rounded-full px-4 py-1.5 tablet:mt-4"
+          className="mt-2 rounded-full px-3 py-1"
           style={{ backgroundColor: `${color}15` }}
         >
-          <p className="text-sm font-semibold" style={{ color }}>
+          <p className="text-xs font-semibold" style={{ color }}>
             {formatDistance(prediction.distanceKm)} km
           </p>
         </div>
@@ -185,16 +197,17 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
     );
   };
 
-  const renderRankingRow = (prediction: RankedPrediction, index: number) => {
-    const rank = index + 4;
+  const renderRankingRow = (prediction: RankedPrediction, pageIndex: number) => {
+    const rank = rankingPage * ITEMS_PER_PAGE + pageIndex + 4;
     const barWidth = Math.max(8, (1 - prediction.distanceKm / maxDistance) * 100);
-    const delay = Math.min(index, 7) * 80;
+    const delay = Math.min(pageIndex, 7) * 80;
 
     return (
       <div
         key={prediction.id}
-        className="animate-slide-up rounded-xl border border-rose-soft bg-warm-white px-4 py-3.5 tablet:px-5 tablet:py-4"
+        className="animate-slide-up cursor-pointer rounded-xl border border-rose-soft bg-warm-white px-4 py-3.5 transition-shadow hover:shadow-md tablet:px-5 tablet:py-4"
         style={{ animationDelay: `${700 + delay}ms`, animationFillMode: 'both' }}
+        onClick={() => handleFocusPrediction(prediction)}
       >
         <div className="flex items-center gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold-dark tablet:h-9 tablet:w-9">
@@ -228,41 +241,48 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
   };
 
   // Main render
-  return (
-    <PageContainer>
-      <SparkleBackground />
-
+  const content = (
       <div className="relative z-10 animate-fade-in">
         {/* Back button */}
-        <div className="mb-8">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1.5 text-sm font-medium text-gold transition-colors hover:text-gold-dark"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        {onBack && (
+          <div className="mb-8">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-1.5 text-sm font-medium text-gold transition-colors hover:text-gold-dark"
             >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Volver
-          </button>
-        </div>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              Volver
+            </button>
+          </div>
+        )}
 
         {/* Hero header */}
         <div className="mb-8 text-center tablet:mb-10 desktop:mb-12">
-          <p className="font-serif text-base italic text-slate/70 tablet:text-lg desktop:text-xl">
+          {/* Small envelope icon */}
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="mx-auto mb-3 text-gold/60">
+            <rect x="2" y="4" width="20" height="16" rx="3" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M2 7l10 6 10-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <p className="font-serif text-base italic text-slate/70 tablet:text-lg">
             Ha sido llamada a servir en la
           </p>
-          <h1 className="mt-2 font-serif text-3xl font-bold text-navy tablet:text-5xl desktop:text-6xl">
+          <h1 className="mt-2 font-serif text-3xl font-bold text-navy tablet:text-4xl desktop:text-5xl">
             {destination.missionName}
           </h1>
+          <p className="mt-2 font-serif text-sm italic text-slate/40">
+            &ldquo;Iré a donde Tú quieras que vaya&rdquo;
+          </p>
         </div>
 
         <DecorativeDivider className="my-8 tablet:my-10 desktop:my-12" />
@@ -282,6 +302,7 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
 
         {/* Map card */}
         <div
+          ref={mapCardRef}
           className="animate-slide-up overflow-hidden rounded-2xl border border-rose-soft bg-warm-white p-2 shadow-sm tablet:p-3 desktop:p-4"
           style={{ animationDelay: '300ms', animationFillMode: 'both' }}
         >
@@ -297,6 +318,8 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
               destination={destination}
               showLines={true}
               showCountBadges={true}
+              readOnly={true}
+              focusCoords={focusCoords}
             />
           </Suspense>
         </div>
@@ -317,23 +340,64 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
           </>
         )}
 
-        {/* Ranking list */}
+        {/* Ranking list — paginated */}
         {rest.length > 0 && (
           <>
             <DecorativeDivider className="my-8 tablet:my-10 desktop:my-12" />
 
-            <h3 className="mb-5 text-center font-serif text-lg font-bold text-navy tablet:mb-6 tablet:text-xl desktop:text-2xl">
+            <h3 className="mb-4 text-center font-serif text-lg font-bold text-navy">
               Todas las predicciones
             </h3>
-            <div className="grid grid-cols-1 gap-3 tablet:gap-3.5 desktop:grid-cols-2 desktop:gap-4">
-              {rest.map((p, i) => renderRankingRow(p, i))}
+            <div className="flex flex-col gap-3">
+              {pagedRest.map((p, i) => renderRankingRow(p, i))}
             </div>
+
+            {/* Pagination controls */}
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setRankingPage((p) => Math.max(0, p - 1))}
+                  disabled={rankingPage === 0}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-rose-soft bg-warm-white text-navy/60 transition-colors hover:bg-gold/10 disabled:opacity-30 disabled:hover:bg-warm-white"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+                <span className="text-xs text-slate/60">
+                  {rankingPage + 1} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setRankingPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={rankingPage === totalPages - 1}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-rose-soft bg-warm-white text-navy/60 transition-colors hover:bg-gold/10 disabled:opacity-30 disabled:hover:bg-warm-white"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </>
         )}
 
+        {/* Footer message */}
+        <DecorativeDivider className="my-8 tablet:my-10" />
+        <p className="text-center font-serif text-sm italic text-slate/40">
+          &ldquo;Ire a donde tu quieras que vaya&rdquo;
+        </p>
+
         {/* Bottom spacer */}
-        <div className="h-10 tablet:h-14 desktop:h-16" />
+        <div className="h-8" />
       </div>
+  );
+
+  if (inline) return content;
+
+  return (
+    <PageContainer>
+      <SparkleBackground />
+      {content}
     </PageContainer>
   );
 }

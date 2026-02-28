@@ -29,6 +29,7 @@ export class RevelationService {
     const masked = {
       id: rev.id,
       isRevealed: rev.isRevealed,
+      hasBeenOpened: rev.hasBeenOpened,
       missionaryName: decrypted.missionaryName,
       missionaryAddress: '???',
       missionName: '???',
@@ -103,6 +104,7 @@ export class RevelationService {
     return {
       id: rev.id,
       isRevealed: rev.isRevealed,
+      hasBeenOpened: rev.hasBeenOpened,
       missionaryName: decrypted.missionaryName,
       missionaryAddress: '••••••••',
       missionName: '••••••••',
@@ -198,6 +200,16 @@ export class RevelationService {
     }
 
     return this.repo.toggleReveal();
+  }
+
+  async markOpened() {
+    const rev = await this.repo.findFirst();
+    if (!rev || !rev.isRevealed) return null;
+    return this.repo.markOpened();
+  }
+
+  async resetOpened() {
+    return this.repo.resetOpened();
   }
 
   async getDestinationCoordinates(

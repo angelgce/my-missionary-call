@@ -10,6 +10,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import type { IState, ICity } from 'country-state-city';
 
 import { Prediction } from '@/core/store/slices/predictionSlice';
+import { haversineDistance } from '@/core/utils/haversine';
 
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/positron';
 
@@ -42,6 +43,7 @@ interface WorldMapProps {
   destination?: { lat: number; lng: number };
   showLines?: boolean;
   showCountBadges?: boolean;
+  readOnly?: boolean;
 }
 
 function getCountryZoom(code: string): number {
@@ -71,6 +73,7 @@ function WorldMap({
   destination,
   showLines,
   showCountBadges,
+  readOnly,
 }: WorldMapProps) {
   const mapRef = useRef<MapRef>(null);
   const isZoomed = selectedCountryCode !== '';
@@ -82,7 +85,7 @@ function WorldMap({
   const [mapReady, setMapReady] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [legendCountryCode, setLegendCountryCode] = useState<string | null>(null);
-  const [legendCollapsed, setLegendCollapsed] = useState(false);
+  const [legendCollapsed, setLegendCollapsed] = useState(true);
 
   // The active country for legend drill-down (from props or legend click)
   const activeCountryCode = selectedCountryCode || legendCountryCode || '';
@@ -328,8 +331,8 @@ function WorldMap({
         mapStyle={MAP_STYLE}
         attributionControl={false}
         renderWorldCopies={false}
-        cursor={isDragging ? 'grabbing' : 'crosshair'}
-        onClick={handleClick}
+        cursor={readOnly ? (isDragging ? 'grabbing' : 'grab') : (isDragging ? 'grabbing' : 'crosshair')}
+        onClick={readOnly ? undefined : handleClick}
         onDragStart={() => setIsDragging(true)}
         onDragEnd={() => setIsDragging(false)}
         onRender={updateLineCoords}
@@ -384,6 +387,9 @@ function WorldMap({
           .map((p) => {
             const isHighlighted = p.id === highlightedPredictionId;
             const isActive = p.id === activePredictionId;
+            const distKm = destination
+              ? Math.round(haversineDistance(parseFloat(p.latitude!), parseFloat(p.longitude!), destination.lat, destination.lng))
+              : null;
             return (
               <MapMarker
                 key={p.id}
@@ -424,6 +430,11 @@ function WorldMap({
                       {p.country && (
                         <p className="text-[9px] text-gold/70">{p.country}</p>
                       )}
+                      {distKm !== null && (
+                        <p className="mt-0.5 text-[10px] font-semibold text-navy/80">
+                          {distKm.toLocaleString('es-MX')} km
+                        </p>
+                      )}
                       {/* Arrow */}
                       <div className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-gold/20 bg-white" />
                     </div>
@@ -433,17 +444,59 @@ function WorldMap({
             );
           })}
 
-        {/* Destination marker */}
+        {/* Destination marker — golden with glow */}
         {destination && (
-          <MapMarker longitude={destination.lng} latitude={destination.lat} anchor="bottom">
-            <div className="flex flex-col items-center">
-              <svg width="36" height="46" viewBox="0 0 32 42" fill="none">
+          <MapMarker longitude={destination.lng} latitude={destination.lat} anchor="bottom" style={{ zIndex: 10 }}>
+            <style>{`
+              @keyframes destPulse {
+                0%, 100% { transform: scale(1); opacity: 0.5; }
+                50% { transform: scale(1.8); opacity: 0; }
+              }
+              @keyframes destSparkle {
+                0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+                50% { opacity: 1; transform: scale(1) rotate(180deg); }
+              }
+            `}</style>
+            <div className="relative flex flex-col items-center">
+              {/* Pulsing glow rings */}
+              <div
+                className="absolute left-1/2 top-[15px] h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                style={{ backgroundColor: 'rgba(191, 155, 48, 0.25)', animation: 'destPulse 2s ease-out infinite' }}
+              />
+              <div
+                className="absolute left-1/2 top-[15px] h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                style={{ backgroundColor: 'rgba(191, 155, 48, 0.20)', animation: 'destPulse 2s ease-out infinite 0.7s' }}
+              />
+              {/* Sparkle dots */}
+              {[
+                { x: -14, y: 2, delay: '0s', size: 4 },
+                { x: 14, y: 6, delay: '0.5s', size: 3 },
+                { x: -8, y: -10, delay: '1s', size: 3 },
+                { x: 10, y: -8, delay: '1.5s', size: 4 },
+                { x: 0, y: -14, delay: '0.3s', size: 3 },
+                { x: -12, y: 14, delay: '0.8s', size: 3 },
+              ].map((s, i) => (
+                <div
+                  key={i}
+                  className="absolute left-1/2 top-[15px]"
+                  style={{
+                    width: s.size,
+                    height: s.size,
+                    borderRadius: '50%',
+                    backgroundColor: '#BF9B30',
+                    transform: `translate(calc(-50% + ${s.x}px), calc(-50% + ${s.y}px))`,
+                    animation: `destSparkle 2.5s ease-in-out infinite ${s.delay}`,
+                  }}
+                />
+              ))}
+              {/* Pin SVG */}
+              <svg width="40" height="50" viewBox="0 0 32 42" fill="none" className="relative z-10" style={{ filter: 'drop-shadow(0 2px 6px rgba(191, 155, 48, 0.5))' }}>
                 <path
                   d="M16 0C7.16 0 0 7.16 0 16c0 12 16 26 16 26s16-14 16-26C32 7.16 24.84 0 16 0z"
-                  fill="#BE6B84"
+                  fill="#BF9B30"
                 />
-                <circle cx="16" cy="15" r="6" fill="#FFF" />
-                <circle cx="16" cy="15" r="3" fill="#BE6B84" />
+                <circle cx="16" cy="15" r="7" fill="#FFF" />
+                <circle cx="16" cy="15" r="3.5" fill="#BF9B30" />
               </svg>
             </div>
           </MapMarker>

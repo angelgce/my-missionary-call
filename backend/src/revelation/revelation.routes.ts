@@ -100,6 +100,7 @@ export const revelationRoutes = new Hono<{ Bindings: Env }>()
     const data = c.req.valid('json');
     const service = getService(c.env);
     const rev = await service.update(data);
+    await c.env.KV.delete('revelation:destination');
     return c.json(rev);
   })
   .patch(
@@ -116,6 +117,23 @@ export const revelationRoutes = new Hono<{ Bindings: Env }>()
       return c.json({ success: true, missionaryName });
     },
   )
+  .patch('/mark-opened', async (c) => {
+    const service = getService(c.env);
+    const result = await service.markOpened();
+    if (!result) {
+      return c.json({ error: 'Not found or not yet revealed' }, 404);
+    }
+    return c.json({ success: true });
+  })
+  .patch('/reset-opened', authMiddleware, async (c) => {
+    const service = getService(c.env);
+    const result = await service.resetOpened();
+    if (!result) {
+      return c.json({ error: 'No revelation found' }, 404);
+    }
+    await c.env.KV.delete('revelation:destination');
+    return c.json({ success: true });
+  })
   .patch('/reveal', authMiddleware, async (c) => {
     const service = getService(c.env);
     const result = await service.toggleReveal();
@@ -142,6 +160,7 @@ export const revelationRoutes = new Hono<{ Bindings: Env }>()
         // Save encrypted to DB (including raw PDF text)
         const service = getService(c.env);
         await service.updateFromPdf({ ...extracted, missionaryAddress: extracted.missionaryAddress || '', letterDate: extracted.letterDate || '', pdfText: text });
+        await c.env.KV.delete('revelation:destination');
 
         // Only return missionaryName, keep the rest hidden
         return c.json({
@@ -195,6 +214,7 @@ export const revelationRoutes = new Hono<{ Bindings: Env }>()
 
         const service = getService(c.env);
         await service.updateFromPdf(data);
+        await c.env.KV.delete('revelation:destination');
         return c.json({ success: true });
       } catch (error) {
         console.error('PDF confirm error:', error);

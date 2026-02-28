@@ -53,6 +53,7 @@ export const revelation = pgTable('revelation', {
   pdfText: text('pdf_text').notNull().default(''),
   normalizedPdfText: text('normalized_pdf_text').notNull().default(''),
   isRevealed: boolean('is_revealed').default(false).notNull(),
+  hasBeenOpened: boolean('has_been_opened').default(false).notNull(),
   openingDate: text('opening_date').default(''),
   locationAddress: text('location_address').default(''),
   locationUrl: text('location_url').default(''),

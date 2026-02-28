@@ -65,6 +65,30 @@ export class RevelationRepository {
     return results[0];
   }
 
+  async markOpened() {
+    const existing = await this.findFirst();
+    if (!existing) return null;
+
+    const results = await this.db
+      .update(revelation)
+      .set({ hasBeenOpened: true, updatedAt: new Date() })
+      .where(eq(revelation.id, existing.id))
+      .returning();
+    return results[0];
+  }
+
+  async resetOpened() {
+    const existing = await this.findFirst();
+    if (!existing) return null;
+
+    const results = await this.db
+      .update(revelation)
+      .set({ hasBeenOpened: false, updatedAt: new Date() })
+      .where(eq(revelation.id, existing.id))
+      .returning();
+    return results[0];
+  }
+
   async updateEventSettings(data: {
     openingDate: string;
     locationAddress: string;

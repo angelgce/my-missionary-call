@@ -36,6 +36,7 @@ interface RevelationData {
   pdfText: string | null;
   normalizedPdfText: string | null;
   isRevealed: boolean;
+  hasBeenOpened: boolean;
 }
 
 const CALL_LETTER_TEMPLATE = `{{LETTER_DATE}}
@@ -168,6 +169,7 @@ function Home() {
 
   const isFreeForAll = isRevealed && (countdown?.expired === true || !eventSettings?.openingDate);
   const canOpenEnvelope = isFreeForAll || (isAdmin && isRevealed);
+  const ceremonyDone = data?.hasBeenOpened === true && isFreeForAll;
 
   // Effects
   useEffect(() => {
@@ -203,6 +205,16 @@ function Home() {
     const interval = setInterval(fetchRevelation, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Auto-fetch destination when ceremony is done (post-refresh)
+  useEffect(() => {
+    if (!ceremonyDone || destination) return;
+    setLoadingDestination(true);
+    api.get('/revelation/destination')
+      .then((res) => setDestination(res.data))
+      .catch(() => {})
+      .finally(() => setLoadingDestination(false));
+  }, [ceremonyDone, destination]);
 
   useEffect(() => {
     if (!showModal) return;
@@ -488,6 +500,8 @@ function Home() {
     setDateRevealed(true);
     fireConfetti(e);
     playSound('arpa');
+    // Fire-and-forget: mark the ceremony as opened (picked up on next page load)
+    api.patch('/revelation/mark-opened').catch(() => {});
   }, [fireConfetti, playSound]);
 
   const handleRevealLang = useCallback((e: React.MouseEvent) => {
@@ -523,7 +537,7 @@ function Home() {
     }
   };
 
-  // Show results view
+  // Show results view (from in-ceremony flow)
   if (showResults && destination) {
     return (
       <Suspense fallback={null}>
@@ -581,7 +595,35 @@ function Home() {
 
         <DecorativeDivider className="my-3 tablet:my-4" />
 
-        {/* Envelope */}
+        {/* Envelope or Post-ceremony congrats */}
+        {ceremonyDone ? (
+          <div className="mx-auto max-w-md space-y-4 py-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-gold/30 bg-cream">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gold">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+            </div>
+            <p className="font-serif text-xl font-bold text-navy tablet:text-2xl">
+              {data?.missionName !== '???' ? data?.missionName : 'Misión asignada'}
+            </p>
+            {data?.language && data.language !== '???' && (
+              <p className="text-sm text-slate/70">Idioma: {data.language}</p>
+            )}
+            {data?.trainingCenter && data.trainingCenter !== '???' && (
+              <p className="text-sm text-slate/70">CCM: {data.trainingCenter}</p>
+            )}
+            {data?.entryDate && data.entryDate !== '???' && (
+              <p className="text-sm text-slate/70">Entrada: {data.entryDate}</p>
+            )}
+            {loadingDestination && (
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-gold/30 border-t-gold" />
+                <span className="text-xs text-slate/50">Cargando mapa...</span>
+              </div>
+            )}
+          </div>
+        ) : (
         <div>
           <div
             onClick={handleOpenLetter}
@@ -1006,6 +1048,7 @@ function Home() {
             </div>
           )}
         </div>
+        )}
 
         <DecorativeDivider className="my-4 tablet:my-5" />
       </div>
@@ -1013,16 +1056,18 @@ function Home() {
       {/* Action buttons */}
       <div className="relative z-10 flex w-full flex-col items-center gap-4 tablet:gap-5">
         <div className="flex w-full flex-col gap-3 tablet:flex-row tablet:justify-center tablet:gap-4">
-          <button
-            onClick={handleScrollToMap}
-            className="w-full rounded-full border-2 border-gold bg-transparent px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-gold transition-all hover:bg-gold hover:text-white hover:shadow-lg tablet:w-auto tablet:px-8 tablet:py-3 tablet:text-sm"
-            style={{
-              animation: 'sparklePulse 4s ease-in-out infinite',
-              boxShadow: '0 2px 8px rgba(212, 132, 155, 0.1)',
-            }}
-          >
-            Mi Predicción
-          </button>
+          {!ceremonyDone && (
+            <button
+              onClick={handleScrollToMap}
+              className="w-full rounded-full border-2 border-gold bg-transparent px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-gold transition-all hover:bg-gold hover:text-white hover:shadow-lg tablet:w-auto tablet:px-8 tablet:py-3 tablet:text-sm"
+              style={{
+                animation: 'sparklePulse 4s ease-in-out infinite',
+                boxShadow: '0 2px 8px rgba(212, 132, 155, 0.1)',
+              }}
+            >
+              Mi Predicción
+            </button>
+          )}
           <button
             onClick={handleScrollToAdvice}
             className="w-full rounded-full border-2 border-gold bg-transparent px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-gold transition-all hover:bg-gold hover:text-white hover:shadow-lg tablet:w-auto tablet:px-8 tablet:py-3 tablet:text-sm"
@@ -1100,7 +1145,19 @@ function Home() {
 
       {/* Predictions marquee */}
       <div className="relative left-1/2 z-10 mt-8 w-screen -translate-x-1/2 py-6 tablet:mt-10 tablet:py-8" style={{ background: 'rgba(248, 224, 232, 0.2)' }}>
-        {predictions.length > 0 && (() => {
+        {ceremonyDone && destination && (
+          <div className="mt-6 px-4 tablet:mt-8 tablet:px-[10%] desktop:px-[15%]">
+            <Suspense fallback={null}>
+              <ResultsView
+                predictions={predictions}
+                destination={destination}
+                inline
+              />
+            </Suspense>
+          </div>
+        )}
+
+        {!ceremonyDone && predictions.length > 0 && (() => {
           const formatDate = (d: string) =>
             new Date(d).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
           const predShouldScroll = predictions.length > 3;
@@ -1160,37 +1217,39 @@ function Home() {
         })()}
 
         {/* Map */}
-        <div ref={mapSectionRef} className="mt-6 px-4 tablet:mt-8 tablet:px-[10%] desktop:px-[15%]">
-          <div
-            className="overflow-hidden rounded-2xl border border-rose-soft/60 bg-warm-white p-3 tablet:rounded-3xl tablet:p-5"
-            style={{ boxShadow: '0 4px 20px rgba(59, 33, 64, 0.06), 0 1px 4px rgba(59, 33, 64, 0.03)' }}
-          >
-            {showMapHint && (
-              <p className="mb-3 animate-fade-in text-center text-sm font-medium text-gold">
-                Toca en el mapa el lugar donde crees que será enviada
+        {!ceremonyDone && (
+          <div ref={mapSectionRef} className="mt-6 px-4 tablet:mt-8 tablet:px-[10%] desktop:px-[15%]">
+            <div
+              className="overflow-hidden rounded-2xl border border-rose-soft/60 bg-warm-white p-3 tablet:rounded-3xl tablet:p-5"
+              style={{ boxShadow: '0 4px 20px rgba(59, 33, 64, 0.06), 0 1px 4px rgba(59, 33, 64, 0.03)' }}
+            >
+              {showMapHint && (
+                <p className="mb-3 animate-fade-in text-center text-sm font-medium text-gold">
+                  Toca en el mapa el lugar donde crees que será enviada
+                </p>
+              )}
+              <div className="overflow-hidden rounded-xl tablet:rounded-2xl">
+                <Suspense fallback={null}>
+                  <WorldMap
+                    selectedCountryCode=""
+                    selectedStateCode=""
+                    selectedCity=""
+                    countryCenter={null}
+                    states={[]}
+                    cities={[]}
+                    predictions={predictions}
+                    onMapClick={handleGlobalMapClick}
+                    onPredictionClick={() => {}}
+                    showCountBadges
+                  />
+                </Suspense>
+              </div>
+              <p className="mt-3 text-center text-xs text-slate/60">
+                Haz clic en el mapa para registrar tu predicción
               </p>
-            )}
-            <div className="overflow-hidden rounded-xl tablet:rounded-2xl">
-              <Suspense fallback={null}>
-                <WorldMap
-                  selectedCountryCode=""
-                  selectedStateCode=""
-                  selectedCity=""
-                  countryCenter={null}
-                  states={[]}
-                  cities={[]}
-                  predictions={predictions}
-                  onMapClick={handleGlobalMapClick}
-                  onPredictionClick={() => {}}
-                  showCountBadges
-                />
-              </Suspense>
             </div>
-            <p className="mt-3 text-center text-xs text-slate/60">
-              Haz clic en el mapa para registrar tu predicción
-            </p>
           </div>
-        </div>
+        )}
 
         {/* Advice form */}
         <div ref={adviceSectionRef} className="mt-8 px-4 tablet:mt-10 tablet:px-[10%] desktop:px-[15%]">

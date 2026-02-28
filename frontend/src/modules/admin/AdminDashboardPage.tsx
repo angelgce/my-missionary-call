@@ -21,6 +21,7 @@ interface AdminRevelation {
   id?: string;
   missionaryName: string;
   isRevealed: boolean;
+  hasBeenOpened?: boolean;
   hasData?: boolean;
   updatedAt?: string;
 }
@@ -58,6 +59,7 @@ function AdminDashboardPage() {
   });
   const [predictions, setPredictions] = useState<PredictionItem[]>([]);
   const [revealing, setRevealing] = useState(false);
+  const [resettingCeremony, setResettingCeremony] = useState(false);
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -137,7 +139,7 @@ function AdminDashboardPage() {
   // Computed values
   const canReveal = !openingDate || revealCountdown?.expired === true;
 
-  const PAGE_SIZE = 5;
+  const PAGE_SIZE = 6;
 
   const sortedPredictions = useMemo(
     () => [...predictions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
@@ -165,6 +167,7 @@ function AdminDashboardPage() {
           id: revRes.data.id,
           missionaryName: revRes.data.missionaryName || '',
           isRevealed: revRes.data.isRevealed,
+          hasBeenOpened: revRes.data.hasBeenOpened,
           hasData: revRes.data.hasData,
           updatedAt: revRes.data.updatedAt,
         });
@@ -424,16 +427,16 @@ function AdminDashboardPage() {
           </button>
         </div>
 
-        <DecorativeDivider className="my-2 tablet:my-3" />
+        <DecorativeDivider className="my-4 tablet:my-6" />
 
         {message && (
-          <div className="mb-4 rounded-lg bg-cream p-3 text-center text-sm font-medium text-navy">
+          <div className="mb-6 rounded-xl border border-rose-soft/40 bg-warm-white p-4 text-center text-sm font-medium text-navy shadow-sm">
             {message}
           </div>
         )}
 
         {/* Event Settings Section */}
-        <div className="rounded-xl border border-rose-soft bg-warm-white p-6">
+        <div className="rounded-2xl border border-rose-soft/50 bg-warm-white p-6 shadow-[0_1px_3px_rgba(59,33,64,0.04),0_4px_12px_rgba(212,132,155,0.06)] tablet:p-8">
           <h2 className="mb-4 font-serif text-xl font-bold text-navy">
             Configuración del Evento
           </h2>
@@ -494,10 +497,10 @@ function AdminDashboardPage() {
           </button>
         </div>
 
-        <DecorativeDivider className="my-2 tablet:my-3" />
+        <DecorativeDivider className="my-4 tablet:my-6" />
 
         {/* Carta Misional Section */}
-        <div className="rounded-xl border border-rose-soft bg-warm-white p-6">
+        <div className="rounded-2xl border border-rose-soft/50 bg-warm-white p-6 shadow-[0_1px_3px_rgba(59,33,64,0.04),0_4px_12px_rgba(212,132,155,0.06)] tablet:p-8">
           <h2 className="mb-4 font-serif text-xl font-bold text-navy">
             Carta Misional
           </h2>
@@ -548,7 +551,7 @@ function AdminDashboardPage() {
           </div>
 
           {/* Encrypted data status */}
-          <div className="mb-4 rounded-lg bg-navy/5 p-4">
+          <div className="mb-5 rounded-xl bg-navy/5 p-4 tablet:p-5">
             <div className="flex items-center gap-2">
               <div className={`h-2 w-2 rounded-full ${revelation.hasData ? 'bg-green-500' : 'bg-slate/30'}`} />
               <p className="text-sm text-slate/70">
@@ -577,10 +580,10 @@ function AdminDashboardPage() {
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`mb-4 cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
+            className={`mb-5 cursor-pointer rounded-xl border-2 border-dashed p-7 text-center transition-all duration-200 ${
               dragOver
-                ? 'border-gold bg-gold/5'
-                : 'border-rose-soft hover:border-gold/50'
+                ? 'border-gold bg-gold/5 shadow-[0_0_0_3px_rgba(212,132,155,0.1)]'
+                : 'border-rose-soft/60 hover:border-gold/50 hover:bg-cream/50'
             }`}
           >
             <input
@@ -611,7 +614,7 @@ function AdminDashboardPage() {
 
           {/* Extracted data preview */}
           {extractedData && (
-            <div className="mb-4 rounded-lg border border-gold/30 bg-gold/5 p-4">
+            <div className="mb-5 rounded-xl border border-gold/30 bg-gold/5 p-5 shadow-[0_1px_3px_rgba(212,132,155,0.06)]">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-navy">
                   Datos Extraídos — Revisa y Edita
@@ -710,7 +713,7 @@ function AdminDashboardPage() {
 
           {/* Reveal toggle */}
           {!canReveal && !revelation.isRevealed ? (
-            <div className="rounded-xl border border-rose-soft bg-cream/60 p-5 text-center">
+            <div className="rounded-xl border border-rose-soft/50 bg-cream/60 p-6 text-center shadow-[0_1px_2px_rgba(59,33,64,0.03)]">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3 h-8 w-8 text-slate/40">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0110 0v4" />
@@ -761,6 +764,31 @@ function AdminDashboardPage() {
           <p className="mt-3 text-center text-xs text-slate/60">
             Estado: {revelation.isRevealed ? 'Visible para todos' : 'Oculto — nadie puede ver los datos'}
           </p>
+          {revelation.hasBeenOpened && (
+            <div className="mt-3 flex flex-col items-center gap-2">
+              <p className="text-xs text-gold">La ceremonia ya fue realizada</p>
+              <button
+                type="button"
+                onClick={async () => {
+                  setResettingCeremony(true);
+                  try {
+                    await api.patch('/revelation/reset-opened');
+                    setRevelation((prev) => ({ ...prev, hasBeenOpened: false }));
+                    setMessage('Ceremonia reiniciada');
+                    setTimeout(() => setMessage(''), 3000);
+                  } catch {
+                    setMessage('Error al reiniciar la ceremonia');
+                    setTimeout(() => setMessage(''), 5000);
+                  }
+                  setResettingCeremony(false);
+                }}
+                disabled={resettingCeremony}
+                className="rounded-full border border-gold/40 bg-transparent px-5 py-2 text-xs font-semibold uppercase tracking-wider text-gold transition-colors hover:bg-gold hover:text-white disabled:opacity-40"
+              >
+                {resettingCeremony ? 'Reiniciando...' : 'Reiniciar Ceremonia'}
+              </button>
+            </div>
+          )}
           {revelation.updatedAt && (
             <p className="mt-1 text-center text-xs text-slate/40">
               Última actualización: {new Date(revelation.updatedAt).toLocaleString()}
@@ -769,8 +797,8 @@ function AdminDashboardPage() {
         </div>
 
         {/* Predictions Section */}
-        <div className="mt-8">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="mt-8 rounded-2xl border border-rose-soft/50 bg-warm-white p-5 shadow-[0_1px_3px_rgba(59,33,64,0.04),0_4px_12px_rgba(212,132,155,0.06)] tablet:p-7">
+          <div className="mb-5 flex items-center justify-between">
             <h2 className="font-serif text-xl font-bold text-navy">
               Predicciones ({predictions.length})
             </h2>
@@ -798,14 +826,14 @@ function AdminDashboardPage() {
           </div>
 
           {predictions.length === 0 ? (
-            <p className="text-center text-slate/60">No hay predicciones aún</p>
+            <p className="py-6 text-center text-sm text-slate/50">No hay predicciones aún</p>
           ) : (
             <>
               <div className="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
                 {paginatedPredictions.map((p) => (
                   <div
                     key={p.id}
-                    className="group relative flex flex-col rounded-2xl border border-rose-soft bg-warm-white p-5 transition-shadow hover:shadow-lg"
+                    className="group relative flex flex-col rounded-xl border border-rose-soft/40 bg-cream p-5 shadow-[0_1px_2px_rgba(59,33,64,0.03),0_2px_8px_rgba(212,132,155,0.05)] transition-all duration-200 hover:shadow-[0_2px_6px_rgba(59,33,64,0.06),0_6px_20px_rgba(212,132,155,0.1)] hover:-translate-y-0.5"
                   >
                     {/* Header: name + delete */}
                     <div className="mb-3 flex items-start justify-between">
@@ -840,19 +868,15 @@ function AdminDashboardPage() {
                       </p>
                     </div>
 
-                    {/* Footer: date + IP */}
+                    {/* Footer: date */}
                     <div className="mt-auto flex items-center gap-2 border-t border-rose-soft/60 pt-3 text-[11px] text-slate/50">
                       <span>{new Date(p.createdAt).toLocaleDateString()}</span>
-                      <span className="hidden tablet:inline">·</span>
-                      <span className="hidden tablet:inline">
-                        {showPredictions ? p.ipAddress : censor(p.ipAddress)}
-                      </span>
                     </div>
                   </div>
                 ))}
               </div>
               {predictions.length > 0 && (
-                <div className="mt-4 flex items-center justify-center gap-1">
+                <div className="mt-6 flex items-center justify-center gap-1.5">
                   <button
                     onClick={() => setPredictionsPage(1)}
                     disabled={predictionsPage === 1}
@@ -874,7 +898,7 @@ function AdminDashboardPage() {
                       <polyline points="15 18 9 12 15 6" />
                     </svg>
                   </button>
-                  <span className="mx-2 rounded-lg bg-cream px-3 py-1 text-xs font-medium text-navy">
+                  <span className="mx-2 rounded-lg bg-navy/5 px-3.5 py-1.5 text-xs font-medium tabular-nums text-navy">
                     {predictionsPage} de {predictionsTotalPages}
                   </span>
                   <button
@@ -905,8 +929,8 @@ function AdminDashboardPage() {
         </div>
 
         {/* Advice Section */}
-        <div className="mt-8">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="mt-8 rounded-2xl border border-rose-soft/50 bg-warm-white p-5 shadow-[0_1px_3px_rgba(59,33,64,0.04),0_4px_12px_rgba(212,132,155,0.06)] tablet:p-7">
+          <div className="mb-5 flex items-center justify-between">
             <h2 className="font-serif text-xl font-bold text-navy">
               Consejos ({advices.length})
             </h2>
@@ -934,14 +958,14 @@ function AdminDashboardPage() {
           </div>
 
           {advices.length === 0 ? (
-            <p className="text-center text-slate/60">No hay consejos aún</p>
+            <p className="py-6 text-center text-sm text-slate/50">No hay consejos aún</p>
           ) : (
             <>
               <div className="grid grid-cols-1 gap-4 tablet:grid-cols-2">
                 {paginatedAdvices.map((a) => (
                   <div
                     key={a.id}
-                    className="group relative flex flex-col overflow-hidden rounded-2xl border border-rose-soft bg-warm-white p-5 transition-shadow hover:shadow-lg"
+                    className="group relative flex flex-col overflow-hidden rounded-xl border border-rose-soft/40 bg-cream p-5 shadow-[0_1px_2px_rgba(59,33,64,0.03),0_2px_8px_rgba(212,132,155,0.05)] transition-all duration-200 hover:shadow-[0_2px_6px_rgba(59,33,64,0.06),0_6px_20px_rgba(212,132,155,0.1)] hover:-translate-y-0.5"
                   >
                     {/* Decorative quote mark */}
                     <span className="pointer-events-none absolute -right-2 -top-3 font-serif text-[80px] leading-none text-rose-soft/40 select-none">
@@ -982,7 +1006,7 @@ function AdminDashboardPage() {
                 ))}
               </div>
               {advices.length > 0 && (
-                <div className="mt-4 flex items-center justify-center gap-1">
+                <div className="mt-6 flex items-center justify-center gap-1.5">
                   <button
                     onClick={() => setAdvicesPage(1)}
                     disabled={advicesPage === 1}
@@ -1004,7 +1028,7 @@ function AdminDashboardPage() {
                       <polyline points="15 18 9 12 15 6" />
                     </svg>
                   </button>
-                  <span className="mx-2 rounded-lg bg-cream px-3 py-1 text-xs font-medium text-navy">
+                  <span className="mx-2 rounded-lg bg-navy/5 px-3.5 py-1.5 text-xs font-medium tabular-nums text-navy">
                     {advicesPage} de {advicesTotalPages}
                   </span>
                   <button
@@ -1041,7 +1065,7 @@ function AdminDashboardPage() {
           onClick={() => !deleting && setDeleteConfirm(null)}
         >
           <div
-            className="mx-4 w-full max-w-sm animate-fade-in rounded-2xl border border-rose-soft bg-warm-white p-6 text-center shadow-2xl"
+            className="mx-4 w-full max-w-sm animate-fade-in rounded-2xl border border-rose-soft/40 bg-warm-white p-7 text-center shadow-[0_4px_12px_rgba(59,33,64,0.08),0_16px_40px_rgba(212,132,155,0.12)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-soft/50">
