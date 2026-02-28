@@ -13,7 +13,12 @@
       "Bash(ps:*)",
       "Bash(node:*)",
       "mcp__ide__getDiagnostics",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(grep:*)",
+      "WebSearch",
+      "WebFetch(domain:developers.cloudflare.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:blog.cloudflare.com)"
     ]
   }
 }

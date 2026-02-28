@@ -283,9 +283,10 @@ function WorldMap({
               <svg width="32" height="42" viewBox="0 0 32 42" fill="none">
                 <path
                   d="M16 0C7.16 0 0 7.16 0 16c0 12 16 26 16 26s16-14 16-26C32 7.16 24.84 0 16 0z"
-                  fill="#FFFFFF"
+                  fill="#3B2140"
                 />
                 <circle cx="16" cy="15" r="6" fill="#FFF" />
+                <circle cx="16" cy="15" r="3" fill="#3B2140" />
               </svg>
             </div>
           </MapMarker>
@@ -304,9 +305,9 @@ function WorldMap({
                 onStateClick?.(s.isoCode);
               }}
             >
-              <div className="group relative flex cursor-pointer flex-col items-center">
+              <div className="marker-interactive group relative flex cursor-pointer flex-col items-center">
                 <div className="h-2.5 w-2.5 rounded-full border-2 border-white bg-gold shadow transition-all group-hover:h-3.5 group-hover:w-3.5 group-hover:bg-gold-dark" />
-                <div className="pointer-events-none absolute -top-2 -translate-y-full scale-95 opacity-0 transition-all duration-200 group-hover:scale-100 group-hover:opacity-100">
+                <div className="pointer-events-none absolute -top-2 z-50 -translate-y-full scale-95 opacity-0 transition-all duration-200 group-hover:scale-100 group-hover:opacity-100">
                   <div className="relative whitespace-nowrap rounded-lg border border-gold/20 bg-white px-2.5 py-1.5 shadow-lg">
                     <p className="text-[10px] font-semibold text-navy">{s.name}</p>
                     <div className="absolute -bottom-1.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rotate-45 border-b border-r border-gold/20 bg-white" />
@@ -334,7 +335,7 @@ function WorldMap({
                   onPredictionClick?.(p);
                 }}
               >
-                <div className="group relative flex cursor-pointer flex-col items-center">
+                <div className={`marker-interactive group relative flex cursor-pointer flex-col items-center ${isActive ? 'marker-active' : ''}`}>
                   <svg
                     width={isHighlighted || isActive ? 28 : 20}
                     height={isHighlighted || isActive ? 36 : 26}
@@ -344,13 +345,13 @@ function WorldMap({
                   >
                     <path
                       d="M16 0C7.16 0 0 7.16 0 16c0 12 16 26 16 26s16-14 16-26C32 7.16 24.84 0 16 0z"
-                      fill={isHighlighted || isActive ? '#B8860B' : '#D4849B'}
+                      fill={isHighlighted || isActive ? '#BE6B84' : '#D4849B'}
                     />
-                    <circle cx="16" cy="15" r="6" fill={isHighlighted || isActive ? '#FFF' : '#3B2140'} />
+                    <circle cx="16" cy="15" r="6" fill={isHighlighted || isActive ? '#FFF' : '#FFF'} />
                   </svg>
                   {/* Tooltip */}
                   <div
-                    className={`pointer-events-none absolute -top-2 -translate-y-full transition-all duration-200 ${
+                    className={`pointer-events-none absolute -top-2 z-50 -translate-y-full transition-all duration-200 ${
                       isActive ? 'scale-100 opacity-100' : 'scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100'
                     }`}
                   >
@@ -371,17 +372,17 @@ function WorldMap({
             );
           })}
 
-        {/* Destination marker (gold) */}
+        {/* Destination marker */}
         {destination && (
           <MapMarker longitude={destination.lng} latitude={destination.lat} anchor="bottom">
             <div className="flex flex-col items-center">
               <svg width="36" height="46" viewBox="0 0 32 42" fill="none">
                 <path
                   d="M16 0C7.16 0 0 7.16 0 16c0 12 16 26 16 26s16-14 16-26C32 7.16 24.84 0 16 0z"
-                  fill="#BF9B30"
+                  fill="#BE6B84"
                 />
                 <circle cx="16" cy="15" r="6" fill="#FFF" />
-                <circle cx="16" cy="15" r="3" fill="#BF9B30" />
+                <circle cx="16" cy="15" r="3" fill="#BE6B84" />
               </svg>
             </div>
           </MapMarker>
