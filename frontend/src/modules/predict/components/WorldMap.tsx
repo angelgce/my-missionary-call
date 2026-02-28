@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 
 import Map, {
   Marker as MapMarker,
@@ -41,6 +41,7 @@ interface WorldMapProps {
   initialPin?: PinPosition;
   destination?: { lat: number; lng: number };
   showLines?: boolean;
+  showCountBadges?: boolean;
 }
 
 function getCountryZoom(code: string): number {
@@ -69,6 +70,7 @@ function WorldMap({
   initialPin,
   destination,
   showLines,
+  showCountBadges,
 }: WorldMapProps) {
   const mapRef = useRef<MapRef>(null);
   const isZoomed = selectedCountryCode !== '';
@@ -79,6 +81,60 @@ function WorldMap({
   const [activePredictionId, setActivePredictionId] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [legendCountryCode, setLegendCountryCode] = useState<string | null>(null);
+
+  // The active country for legend drill-down (from props or legend click)
+  const activeCountryCode = selectedCountryCode || legendCountryCode || '';
+  const isLegendZoomed = activeCountryCode !== '';
+
+  // Count badges: group predictions by country (world view) or state (zoomed)
+  const countBadges = useMemo(() => {
+    if (!showCountBadges || predictions.length === 0) return [];
+
+    const validPredictions = predictions.filter((p) => p.latitude && p.longitude);
+    if (validPredictions.length === 0) return [];
+
+    if (isLegendZoomed) {
+      // Group by state within the active country
+      const groups: Record<string, { count: number; lat: number; lng: number; label: string; code: string }> = {};
+      const countryPredictions = validPredictions.filter((p) => p.countryCode === activeCountryCode);
+      for (const p of countryPredictions) {
+        const key = p.stateCode || p.state || 'unknown';
+        if (!groups[key]) {
+          groups[key] = { count: 0, lat: 0, lng: 0, label: p.state || key, code: '' };
+        }
+        groups[key].count++;
+        groups[key].lat += parseFloat(p.latitude!);
+        groups[key].lng += parseFloat(p.longitude!);
+      }
+      return Object.values(groups).map((g) => ({
+        lat: g.lat / g.count,
+        lng: g.lng / g.count,
+        count: g.count,
+        label: g.label,
+        code: g.code,
+      }));
+    }
+
+    // Group by country (world view)
+    const groups: Record<string, { count: number; lat: number; lng: number; label: string; code: string }> = {};
+    for (const p of validPredictions) {
+      const key = p.countryCode || p.country || 'unknown';
+      if (!groups[key]) {
+        groups[key] = { count: 0, lat: 0, lng: 0, label: p.country || key, code: p.countryCode };
+      }
+      groups[key].count++;
+      groups[key].lat += parseFloat(p.latitude!);
+      groups[key].lng += parseFloat(p.longitude!);
+    }
+    return Object.values(groups).map((g) => ({
+      lat: g.lat / g.count,
+      lng: g.lng / g.count,
+      count: g.count,
+      label: g.label,
+      code: g.code,
+    }));
+  }, [showCountBadges, predictions, isLegendZoomed, activeCountryCode]);
 
   // Set initial pin from pre-filled data
   useEffect(() => {
@@ -392,6 +448,59 @@ function WorldMap({
           </MapMarker>
         )}
       </Map>
+
+      {/* Legend overlay – bottom-left corner */}
+      {countBadges.length > 0 && (
+        <div className="absolute bottom-2 left-2 z-10 max-h-[45%] overflow-y-auto rounded-lg bg-white/90 px-2.5 py-2 shadow-md backdrop-blur-sm">
+          {isLegendZoomed && (
+            <button
+              onClick={() => {
+                setLegendCountryCode(null);
+                const map = mapRef.current;
+                if (map) {
+                  map.flyTo({ center: [-85, 15], zoom: 1.5, duration: 800 });
+                }
+                if (isZoomed) handleBack();
+              }}
+              className="mb-1 text-[10px] font-medium text-gold hover:text-gold-dark"
+            >
+              ← Todos los paises
+            </button>
+          )}
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-navy/50">
+            {isLegendZoomed ? 'Por estado' : 'Por pais'}
+          </p>
+          <div className="flex flex-col gap-1">
+            {countBadges
+              .sort((a, b) => b.count - a.count)
+              .map((badge) => (
+                <div
+                  key={badge.label}
+                  className={`flex items-center justify-between gap-3 rounded px-1 py-0.5 ${
+                    !isLegendZoomed ? 'cursor-pointer transition-colors hover:bg-navy/10' : ''
+                  }`}
+                  onClick={() => {
+                    if (isLegendZoomed || !badge.code) return;
+                    const map = mapRef.current;
+                    if (map) {
+                      map.flyTo({
+                        center: [badge.lng, badge.lat],
+                        zoom: getCountryZoom(badge.code),
+                        duration: 1200,
+                      });
+                    }
+                    setLegendCountryCode(badge.code);
+                  }}
+                >
+                  <span className="max-w-[100px] truncate text-[11px] text-navy/80">{badge.label}</span>
+                  <span className="min-w-[18px] rounded-full bg-navy/85 px-1.5 py-0.5 text-center text-[10px] font-bold leading-none text-white">
+                    {badge.count}
+                  </span>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

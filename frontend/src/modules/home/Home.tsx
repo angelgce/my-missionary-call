@@ -1178,6 +1178,7 @@ function Home() {
                   predictions={predictions}
                   onMapClick={handleGlobalMapClick}
                   onPredictionClick={() => {}}
+                  showCountBadges
                 />
               </Suspense>
             </div>
@@ -1794,7 +1795,7 @@ function Home() {
         </div>
       )}
       {/* Google Maps — event location */}
-      {!isFreeForAll && eventSettings?.locationUrl && (() => {
+      {eventSettings?.locationUrl && (() => {
         const url = eventSettings.locationUrl.trim();
 
         // If admin pasted the embed src directly, use it as-is
