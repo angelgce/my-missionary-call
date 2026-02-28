@@ -172,7 +172,17 @@ export class RevelationService {
     return this.repo.updateEventSettings(data);
   }
 
-  async toggleReveal() {
+  async toggleReveal(): Promise<{ error: string } | Record<string, unknown> | null> {
+    const rev = await this.repo.findFirst();
+    if (!rev) return null;
+
+    // Turning ON reveal — only allowed if countdown has expired
+    if (!rev.isRevealed) {
+      if (!this.isOpeningDateExpired(rev.openingDate)) {
+        return { error: 'No puedes revelar antes de que termine el contador.' };
+      }
+    }
+
     return this.repo.toggleReveal();
   }
 

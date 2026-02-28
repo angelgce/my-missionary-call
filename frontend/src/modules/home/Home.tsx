@@ -22,6 +22,7 @@ const ResultsView = lazy(() => import('@/modules/home/components/ResultsView'));
 import LocationSelector from '@/modules/predict/components/LocationSelector';
 
 import { useHintsChat } from '@/modules/home/hooks/useHintsChat';
+import useSoundEffects from '@/modules/home/hooks/useSoundEffects';
 import { useCountryData } from '@/modules/predict/hooks/useCountryData';
 
 interface RevelationData {
@@ -63,6 +64,7 @@ function Home() {
   const [data, setData] = useState<RevelationData | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [sparkleTransition, setSparkleTransition] = useState(false);
   const [coverOpened, setCoverOpened] = useState(false);
   const [coverKey, setCoverKey] = useState(0);
   const [missionRevealed, setMissionRevealed] = useState(false);
@@ -110,6 +112,7 @@ function Home() {
 
   // Custom hooks
   const { phase, messages, hintCount, isLoading, initChat, sendMessage, resetChat } = useHintsChat();
+  const { play: playSound } = useSoundEffects();
   const { countries, getStates, getCities, findNearestLocation, findNearestCity, getCountryName, getStateName } = useCountryData();
 
   // Computed values
@@ -367,8 +370,31 @@ function Home() {
 
   const handleOpenLetter = () => {
     if (!canOpenEnvelope) return;
-    setShowChat(true);
-    initChat();
+    setSparkleTransition(true);
+    playSound('aurora');
+
+    // Fire massive confetti sparkle burst
+    const cx = 0.5;
+    const cy = 0.4;
+    confetti({ particleCount: 120, spread: 360, origin: { x: cx, y: cy }, colors: ['#BF9B30', '#FFD700', '#D4849B', '#FFF8FA', '#FFFFFF'], startVelocity: 45, gravity: 0.6, ticks: 160, scalar: 1.2 });
+    setTimeout(() => {
+      confetti({ particleCount: 80, spread: 360, origin: { x: cx, y: cy }, colors: ['#FFD700', '#BF9B30', '#F8E0E8', '#FFFFFF'], startVelocity: 35, gravity: 0.5, ticks: 140, scalar: 0.9 });
+    }, 150);
+    setTimeout(() => {
+      confetti({ particleCount: 60, spread: 200, origin: { x: 0.3, y: 0.5 }, colors: ['#BF9B30', '#D4849B', '#FFD700'], startVelocity: 25, gravity: 0.7, ticks: 120 });
+      confetti({ particleCount: 60, spread: 200, origin: { x: 0.7, y: 0.5 }, colors: ['#BF9B30', '#D4849B', '#FFD700'], startVelocity: 25, gravity: 0.7, ticks: 120 });
+    }, 350);
+    setTimeout(() => {
+      confetti({ particleCount: 40, angle: 60, spread: 55, origin: { x: 0, y: 0.6 }, colors: ['#FFD700', '#FFFFFF', '#D4849B'] });
+      confetti({ particleCount: 40, angle: 120, spread: 55, origin: { x: 1, y: 0.6 }, colors: ['#FFD700', '#FFFFFF', '#D4849B'] });
+    }, 550);
+
+    // After sparkle explosion, open the chat gradually
+    setTimeout(() => {
+      setShowChat(true);
+      initChat();
+      setSparkleTransition(false);
+    }, 1200);
   };
 
   const handleShowLetter = () => {
@@ -447,19 +473,22 @@ function Home() {
     setLangRevealed(true);
     setDateRevealed(true);
     fireConfetti(e);
-  }, [fireConfetti]);
+    playSound('arpa');
+  }, [fireConfetti, playSound]);
 
   const handleRevealLang = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setLangRevealed(true);
     fireConfetti(e);
-  }, [fireConfetti]);
+    playSound('arpa');
+  }, [fireConfetti, playSound]);
 
   const handleRevealDate = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setDateRevealed(true);
     fireConfetti(e);
-  }, [fireConfetti]);
+    playSound('arpa');
+  }, [fireConfetti, playSound]);
 
   const handleResetChat = async () => {
     await resetChat();
@@ -511,7 +540,7 @@ function Home() {
           La Iglesia de Jesucristo de los Santos de los Últimos Días
         </p>
 
-        <DecorativeDivider />
+        <DecorativeDivider className="my-2 tablet:my-3" />
 
         <h1
           className="font-serif text-2xl font-bold tablet:text-5xl desktop:text-7xl"
@@ -536,7 +565,7 @@ function Home() {
           {missionaryName}
         </p>
 
-        <DecorativeDivider className="my-6" />
+        <DecorativeDivider className="my-2 tablet:my-3" />
 
         {/* Envelope */}
         <div>
@@ -943,11 +972,8 @@ function Home() {
           )}
         </div>
 
-        <DecorativeDivider className="my-5 tablet:my-8" />
+        <DecorativeDivider className="my-2 tablet:my-3" />
       </div>
-
-      {/* Photo carousel */}
-      <PhotoCarousel />
 
       {/* Action buttons */}
       <div className="relative z-10 flex w-full flex-col items-center gap-3 tablet:gap-4">
@@ -1027,6 +1053,9 @@ function Home() {
           </div>
         </div>
       </div>
+
+      {/* Photo carousel */}
+      <PhotoCarousel />
 
       {/* Predictions marquee */}
       <div className="relative left-1/2 z-10 mt-6 w-screen -translate-x-1/2 tablet:mt-8">
@@ -1312,7 +1341,7 @@ function Home() {
               </svg>
             </button>
 
-            <LetterCover key={coverKey} onReveal={() => setCoverOpened(true)}>
+            <LetterCover key={coverKey} onReveal={() => { setCoverOpened(true); playSound('amanecer'); }}>
             {/* Scrollable letter content — hidden scrollbar */}
             <div className="hide-scrollbar max-h-[88vh] overflow-y-auto bg-white px-4 pb-8 pt-8 tablet:max-h-[92vh] tablet:px-16 tablet:pb-16 tablet:pt-12">
               {/* Letterhead */}

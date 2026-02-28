@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -62,10 +62,10 @@ function AdminDashboardPage() {
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [pdfText, setPdfText] = useState('');
   const [confirming, setConfirming] = useState(false);
-  const [showPredictions, setShowPredictions] = useState(false);
+  const [showPredictions, setShowPredictions] = useState(true);
   const [showExtracted, setShowExtracted] = useState(false);
   const [advices, setAdvices] = useState<{ id: string; guestName: string; advice: string; ipAddress: string; createdAt: string }[]>([]);
-  const [showAdvices, setShowAdvices] = useState(false);
+  const [showAdvices, setShowAdvices] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [savingName, setSavingName] = useState(false);
@@ -92,6 +92,46 @@ function AdminDashboardPage() {
     }
     fetchData();
   }, [isAuthenticated, navigate]);
+
+  // Countdown for reveal lock
+  const [revealCountdown, setRevealCountdown] = useState<{ days: number; hours: number; minutes: number; seconds: number; expired: boolean } | null>(null);
+
+  const targetRevealUtc = useMemo(() => {
+    if (!openingDate) return null;
+    const VILLAHERMOSA_OFFSET_MIN = 360;
+    const localDate = new Date(openingDate);
+    const adjustment = (VILLAHERMOSA_OFFSET_MIN - localDate.getTimezoneOffset()) * 60_000;
+    return localDate.getTime() + adjustment;
+  }, [openingDate]);
+
+  useEffect(() => {
+    if (targetRevealUtc === null) {
+      setRevealCountdown(null);
+      return;
+    }
+
+    const tick = () => {
+      const diff = targetRevealUtc - Date.now();
+      if (diff <= 0) {
+        setRevealCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true });
+        return;
+      }
+      setRevealCountdown({
+        days: Math.floor(diff / 86_400_000),
+        hours: Math.floor((diff % 86_400_000) / 3_600_000),
+        minutes: Math.floor((diff % 3_600_000) / 60_000),
+        seconds: Math.floor((diff % 60_000) / 1_000),
+        expired: false,
+      });
+    };
+
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [targetRevealUtc]);
+
+  // Computed values
+  const canReveal = !openingDate || revealCountdown?.expired === true;
 
   // Event handlers
   const fetchData = async () => {
@@ -138,8 +178,12 @@ function AdminDashboardPage() {
       setRevelation((prev) => ({ ...prev, isRevealed: res.data.isRevealed }));
       setMessage(res.data.isRevealed ? 'Revelación visible' : 'Revelación oculta');
       setTimeout(() => setMessage(''), 3000);
-    } catch {
-      setMessage('Error al cambiar estado');
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+        'Error al cambiar estado';
+      setMessage(msg);
+      setTimeout(() => setMessage(''), 5000);
     }
     setRevealing(false);
   };
@@ -350,7 +394,7 @@ function AdminDashboardPage() {
           </button>
         </div>
 
-        <DecorativeDivider className="my-6" />
+        <DecorativeDivider className="my-2 tablet:my-3" />
 
         {message && (
           <div className="mb-4 rounded-lg bg-cream p-3 text-center text-sm font-medium text-navy">
@@ -411,7 +455,7 @@ function AdminDashboardPage() {
           </button>
         </div>
 
-        <DecorativeDivider className="my-6" />
+        <DecorativeDivider className="my-2 tablet:my-3" />
 
         {/* Carta Misional Section */}
         <div className="rounded-xl border border-rose-soft bg-warm-white p-6">
@@ -623,24 +667,54 @@ function AdminDashboardPage() {
           )}
 
           {/* Reveal toggle */}
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleToggleReveal}
-              disabled={revealing || !revelation.hasData}
-              className={`flex-1 rounded-full py-3 text-sm font-semibold uppercase tracking-wider text-white transition-colors disabled:opacity-40 ${
-                revelation.isRevealed
-                  ? 'bg-slate hover:bg-navy'
-                  : 'bg-navy hover:bg-slate'
-              }`}
-            >
-              {revealing
-                ? 'Cambiando...'
-                : revelation.isRevealed
-                  ? 'Ocultar Llamamiento'
-                  : 'Revelar Llamamiento'}
-            </button>
-          </div>
+          {!canReveal && !revelation.isRevealed ? (
+            <div className="rounded-xl border border-rose-soft bg-cream/60 p-5 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3 h-8 w-8 text-slate/40">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+              <p className="text-sm font-medium text-navy">
+                Revelar Llamamiento bloqueado
+              </p>
+              <p className="mt-1 text-xs text-slate/60">
+                Se habilitará cuando termine el contador
+              </p>
+              {revealCountdown && (
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  {[
+                    { value: revealCountdown.days, label: 'd' },
+                    { value: revealCountdown.hours, label: 'h' },
+                    { value: revealCountdown.minutes, label: 'm' },
+                    { value: revealCountdown.seconds, label: 's' },
+                  ].map(({ value, label }) => (
+                    <div key={label} className="rounded-lg bg-navy/10 px-2.5 py-1.5">
+                      <span className="text-lg font-bold tabular-nums text-navy">{String(value).padStart(2, '0')}</span>
+                      <span className="ml-0.5 text-xs text-slate/50">{label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleToggleReveal}
+                disabled={revealing || !revelation.hasData}
+                className={`flex-1 rounded-full py-3 text-sm font-semibold uppercase tracking-wider text-white transition-colors disabled:opacity-40 ${
+                  revelation.isRevealed
+                    ? 'bg-slate hover:bg-navy'
+                    : 'bg-navy hover:bg-slate'
+                }`}
+              >
+                {revealing
+                  ? 'Cambiando...'
+                  : revelation.isRevealed
+                    ? 'Ocultar Llamamiento'
+                    : 'Revelar Llamamiento'}
+              </button>
+            </div>
+          )}
 
           <p className="mt-3 text-center text-xs text-slate/60">
             Estado: {revelation.isRevealed ? 'Visible para todos' : 'Oculto — nadie puede ver los datos'}

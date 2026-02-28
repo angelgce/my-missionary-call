@@ -116,11 +116,14 @@ export const revelationRoutes = new Hono<{ Bindings: Env }>()
   )
   .patch('/reveal', authMiddleware, async (c) => {
     const service = getService(c.env);
-    const rev = await service.toggleReveal();
-    if (!rev) {
+    const result = await service.toggleReveal();
+    if (!result) {
       return c.json({ error: 'No revelation found' }, 404);
     }
-    return c.json(rev);
+    if ('error' in result) {
+      return c.json(result, 400);
+    }
+    return c.json(result);
   })
   .post(
     '/extract-pdf',

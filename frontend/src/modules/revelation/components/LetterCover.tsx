@@ -33,12 +33,12 @@ function LetterCover({ onReveal, children }: LetterCoverProps) {
   return (
     <div
       className="relative mx-auto flex w-full max-w-2xl cursor-pointer items-center justify-center"
-      style={{ minHeight: '70vh' }}
+      style={{ minHeight: '70vh', perspective: '1200px' }}
       onClick={handleClick}
     >
       {/* Left door */}
       <div
-        className={`absolute inset-y-0 left-0 w-1/2 border border-rose-soft bg-cream ${
+        className={`absolute inset-y-0 left-0 w-1/2 bg-cream ${
           isOpening ? 'cover-left-open' : ''
         }`}
         style={{
@@ -46,16 +46,13 @@ function LetterCover({ onReveal, children }: LetterCoverProps) {
           backfaceVisibility: 'hidden',
           borderTopLeftRadius: '1rem',
           borderBottomLeftRadius: '1rem',
+          boxShadow: '1px 0 8px rgba(59,33,64,0.06)',
         }}
-      >
-        <div className="flex h-full items-center justify-end pr-2">
-          <div className="h-3/4 w-px bg-rose-soft" />
-        </div>
-      </div>
+      />
 
       {/* Right door */}
       <div
-        className={`absolute inset-y-0 right-0 w-1/2 border border-rose-soft bg-cream ${
+        className={`absolute inset-y-0 right-0 w-1/2 bg-cream ${
           isOpening ? 'cover-right-open' : ''
         }`}
         style={{
@@ -63,18 +60,21 @@ function LetterCover({ onReveal, children }: LetterCoverProps) {
           backfaceVisibility: 'hidden',
           borderTopRightRadius: '1rem',
           borderBottomRightRadius: '1rem',
+          boxShadow: '-1px 0 8px rgba(59,33,64,0.06)',
         }}
-      >
-        <div className="flex h-full items-center justify-start pl-2">
-          <div className="h-3/4 w-px bg-rose-soft" />
-        </div>
-      </div>
+      />
 
       {/* Center content (only visible before opening) */}
       {!isOpening && (
         <div className="relative z-10 flex flex-col items-center justify-center animate-cover-breathe">
           {/* Seal / emblem */}
-          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border-2 border-gold/40 bg-white/80 tablet:h-24 tablet:w-24">
+          <div
+            className="mb-6 flex h-20 w-20 items-center justify-center rounded-full tablet:h-24 tablet:w-24"
+            style={{
+              background: 'rgba(201,168,76,0.08)',
+              boxShadow: '0 0 0 1px rgba(201,168,76,0.2), 0 4px 20px rgba(201,168,76,0.1)',
+            }}
+          >
             <svg
               className="h-10 w-10 text-gold tablet:h-12 tablet:w-12"
               fill="none"
@@ -93,19 +93,9 @@ function LetterCover({ onReveal, children }: LetterCoverProps) {
           <p className="font-serif text-xl font-bold text-navy tablet:text-3xl">
             Tu Llamamiento
           </p>
-          <p className="mt-3 text-sm text-slate/60">
+          <p className="mt-2 text-sm text-slate/50">
             Toca para abrir la carta
           </p>
-
-          {/* Shimmer hint */}
-          <div
-            className="mt-5 h-0.5 w-28 rounded-full"
-            style={{
-              background: 'linear-gradient(90deg, transparent, rgba(212, 132, 155, 0.6), transparent)',
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 2s infinite',
-            }}
-          />
         </div>
       )}
     </div>

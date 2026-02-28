@@ -199,7 +199,7 @@ function PredictPage() {
           </div>
         )}
 
-        <DecorativeDivider className="my-6" />
+        <DecorativeDivider className="my-2 tablet:my-3" />
 
         <div className="flex flex-col gap-6 tablet:flex-row">
           {/* Map — always left half on tablet+ */}
