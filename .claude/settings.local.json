@@ -9,7 +9,8 @@
       "Bash(wrangler *)",
       "Bash(curl *)",
       "Bash(mkdir *)",
-      "Bash(ls *)"
+      "Bash(ls *)",
+      "Bash(ps:*)"
     ]
   }
 }
