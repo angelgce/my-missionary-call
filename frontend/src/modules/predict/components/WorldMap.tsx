@@ -82,6 +82,7 @@ function WorldMap({
   const [mapReady, setMapReady] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [legendCountryCode, setLegendCountryCode] = useState<string | null>(null);
+  const [legendCollapsed, setLegendCollapsed] = useState(false);
 
   // The active country for legend drill-down (from props or legend click)
   const activeCountryCode = selectedCountryCode || legendCountryCode || '';
@@ -451,54 +452,78 @@ function WorldMap({
 
       {/* Legend overlay – bottom-left corner */}
       {countBadges.length > 0 && (
-        <div className="absolute bottom-2 left-2 z-10 max-h-[45%] overflow-y-auto rounded-lg bg-white/90 px-2.5 py-2 shadow-md backdrop-blur-sm">
-          {isLegendZoomed && (
-            <button
-              onClick={() => {
-                setLegendCountryCode(null);
-                const map = mapRef.current;
-                if (map) {
-                  map.flyTo({ center: [-85, 15], zoom: 1.5, duration: 800 });
-                }
-                if (isZoomed) handleBack();
-              }}
-              className="mb-1 text-[10px] font-medium text-gold hover:text-gold-dark"
-            >
-              ← Todos los paises
-            </button>
-          )}
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-navy/50">
-            {isLegendZoomed ? 'Por estado' : 'Por pais'}
-          </p>
-          <div className="flex flex-col gap-1">
-            {countBadges
-              .sort((a, b) => b.count - a.count)
-              .map((badge) => (
-                <div
-                  key={badge.label}
-                  className={`flex items-center justify-between gap-3 rounded px-1 py-0.5 ${
-                    !isLegendZoomed ? 'cursor-pointer transition-colors hover:bg-navy/10' : ''
-                  }`}
+        <div className="absolute bottom-2 left-2 z-10 rounded-lg bg-white/90 shadow-md backdrop-blur-sm">
+          <button
+            onClick={() => setLegendCollapsed((v) => !v)}
+            className="flex w-full items-center gap-1.5 px-2.5 py-1.5"
+            title={legendCollapsed ? 'Mostrar países' : 'Ocultar países'}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-navy/50">
+              {legendCollapsed ? (
+                <>
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </>
+              ) : (
+                <>
+                  <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                  <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </>
+              )}
+            </svg>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-navy/50">
+              {legendCollapsed ? 'Países' : (isLegendZoomed ? 'Por estado' : 'Por país')}
+            </span>
+          </button>
+          {!legendCollapsed && (
+            <div className="max-h-[40vh] overflow-y-auto px-2.5 pb-2">
+              {isLegendZoomed && (
+                <button
                   onClick={() => {
-                    if (isLegendZoomed || !badge.code) return;
+                    setLegendCountryCode(null);
                     const map = mapRef.current;
                     if (map) {
-                      map.flyTo({
-                        center: [badge.lng, badge.lat],
-                        zoom: getCountryZoom(badge.code),
-                        duration: 1200,
-                      });
+                      map.flyTo({ center: [-85, 15], zoom: 1.5, duration: 800 });
                     }
-                    setLegendCountryCode(badge.code);
+                    if (isZoomed) handleBack();
                   }}
+                  className="mb-1 text-[10px] font-medium text-gold hover:text-gold-dark"
                 >
-                  <span className="max-w-[100px] truncate text-[11px] text-navy/80">{badge.label}</span>
-                  <span className="min-w-[18px] rounded-full bg-navy/85 px-1.5 py-0.5 text-center text-[10px] font-bold leading-none text-white">
-                    {badge.count}
-                  </span>
-                </div>
-              ))}
-          </div>
+                  ← Todos los países
+                </button>
+              )}
+              <div className="flex flex-col gap-1">
+                {countBadges
+                  .sort((a, b) => b.count - a.count)
+                  .map((badge) => (
+                    <div
+                      key={badge.label}
+                      className={`flex items-center justify-between gap-3 rounded px-1 py-0.5 ${
+                        !isLegendZoomed ? 'cursor-pointer transition-colors hover:bg-navy/10' : ''
+                      }`}
+                      onClick={() => {
+                        if (isLegendZoomed || !badge.code) return;
+                        const map = mapRef.current;
+                        if (map) {
+                          map.flyTo({
+                            center: [badge.lng, badge.lat],
+                            zoom: getCountryZoom(badge.code),
+                            duration: 1200,
+                          });
+                        }
+                        setLegendCountryCode(badge.code);
+                      }}
+                    >
+                      <span className="max-w-[100px] truncate text-[11px] text-navy/80">{badge.label}</span>
+                      <span className="min-w-[18px] rounded-full bg-navy/85 px-1.5 py-0.5 text-center text-[10px] font-bold leading-none text-white">
+                        {badge.count}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

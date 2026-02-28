@@ -370,9 +370,13 @@ function Home() {
       ).unwrap();
       setAdviceSent(true);
       setShowAdviceHint(false);
-      setTimeout(() => setAdviceSent(false), 3000);
+      setTimeout(() => setAdviceSent(false), 6000);
     } catch (err: unknown) {
-      if (typeof err === 'string') setAdviceRejection(err);
+      if (typeof err === 'string') {
+        setAdviceRejection(err);
+      } else {
+        setAdviceRejection('Ocurrió un error al enviar. Intenta de nuevo.');
+      }
     } finally {
       setAdviceSubmitting(false);
     }
@@ -1200,11 +1204,92 @@ function Home() {
               className="mx-auto flex max-w-lg flex-col items-center rounded-2xl border border-rose-soft/50 bg-warm-white py-8"
               style={{ boxShadow: '0 4px 20px rgba(59, 33, 64, 0.06)' }}
             >
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" className="text-gold">
-                <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="currentColor" />
-              </svg>
-              <p className="mt-3 font-serif text-lg font-bold text-navy">Consejo enviado</p>
-              <p className="mt-1 text-sm text-slate/70">Puedes enviar otro consejo si lo deseas</p>
+              <style>{`
+                @keyframes adviceMailboxBounce {
+                  0% { transform: scale(0) rotate(-5deg); opacity: 0; }
+                  40% { transform: scale(1.1) rotate(2deg); opacity: 1; }
+                  60% { transform: scale(0.95) rotate(-1deg); }
+                  80% { transform: scale(1.03) rotate(0deg); }
+                  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+                }
+                @keyframes adviceLetterDrop {
+                  0% { opacity: 1; transform: translate(-50%, -80px) rotate(-8deg); }
+                  40% { opacity: 1; transform: translate(-50%, -20px) rotate(3deg); }
+                  70% { opacity: 1; transform: translate(-50%, 16px) rotate(-1deg); }
+                  90% { opacity: 0.8; transform: translate(-50%, 36px) scale(0.9) rotate(0deg); }
+                  100% { opacity: 0; transform: translate(-50%, 40px) scale(0.7); }
+                }
+                @keyframes adviceFlagUp {
+                  0% { transform: translateY(20px); opacity: 0; }
+                  60% { transform: translateY(-4px); opacity: 1; }
+                  100% { transform: translateY(0); opacity: 1; }
+                }
+                @keyframes adviceFadeInUp {
+                  0% { opacity: 0; transform: translateY(15px); }
+                  100% { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes adviceSparkle {
+                  0% { opacity: 0; transform: scale(0); }
+                  50% { opacity: 1; transform: scale(1.5); }
+                  100% { opacity: 0; transform: scale(0); }
+                }
+              `}</style>
+              <div className="relative" style={{ animation: 'adviceMailboxBounce 0.8s ease-out' }}>
+                {/* Letter flying in */}
+                <div
+                  className="absolute left-1/2 -translate-x-1/2"
+                  style={{ animation: 'adviceLetterDrop 1.2s ease-in forwards', top: '-50px' }}
+                >
+                  <svg width="50" height="36" viewBox="0 0 50 36" fill="none">
+                    <rect x="2" y="2" width="46" height="32" rx="4" fill="#faf8f4" stroke="#BF9B30" strokeWidth="2" />
+                    <path d="M2 2L25 20L48 2" stroke="#BF9B30" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </div>
+                {/* Mailbox */}
+                <svg width="140" height="170" viewBox="0 0 140 170" fill="none">
+                  {/* Post */}
+                  <rect x="62" y="105" width="16" height="60" rx="4" fill="#3B2140" opacity="0.25" />
+                  <rect x="48" y="158" width="44" height="8" rx="4" fill="#3B2140" opacity="0.15" />
+                  {/* Mailbox body */}
+                  <rect x="10" y="34" width="120" height="74" rx="10" fill="#3B2140" opacity="0.9" />
+                  {/* Top */}
+                  <path d="M10 44C10 38.477 14.477 34 20 34H120C125.523 34 130 38.477 130 44V52H10V44Z" fill="#3B2140" />
+                  {/* Slot */}
+                  <rect x="34" y="48" width="72" height="9" rx="4.5" fill="#1a0f20" />
+                  <rect x="42" y="50" width="26" height="3" rx="1.5" fill="#2a1a30" opacity="0.5" />
+                  {/* Door */}
+                  <rect x="48" y="68" width="44" height="30" rx="5" fill="none" stroke="#BF9B30" strokeWidth="1.5" opacity="0.3" />
+                  <circle cx="80" cy="83" r="2.5" fill="#BF9B30" opacity="0.4" />
+                  {/* Flag pole */}
+                  <rect
+                    x="130" y="38" width="7" height="42" rx="3" fill="#BF9B30"
+                    style={{ animation: 'adviceFlagUp 0.5s ease-out 1.2s both' }}
+                  />
+                  {/* Flag */}
+                  <path
+                    d="M137 38H156C158 38 159 39.5 158 41L151 47L158 53C159 54.5 158 56 156 56H137V38Z"
+                    fill="#BF9B30"
+                    style={{ animation: 'adviceFlagUp 0.5s ease-out 1.2s both' }}
+                  />
+                  {/* Sparkles */}
+                  <circle cx="25" cy="28" r="2" fill="#BF9B30" style={{ animation: 'adviceSparkle 1.5s ease-in-out 1.5s both' }} />
+                  <circle cx="115" cy="24" r="1.5" fill="#BF9B30" style={{ animation: 'adviceSparkle 1.5s ease-in-out 1.7s both' }} />
+                  <circle cx="16" cy="62" r="1.5" fill="#BF9B30" style={{ animation: 'adviceSparkle 1.5s ease-in-out 1.9s both' }} />
+                  <circle cx="128" cy="66" r="2" fill="#BF9B30" style={{ animation: 'adviceSparkle 1.5s ease-in-out 2.1s both' }} />
+                </svg>
+              </div>
+              <p
+                className="mt-2 font-serif text-xl font-bold text-navy"
+                style={{ animation: 'adviceFadeInUp 0.6s ease-out 1.4s both' }}
+              >
+                Consejo enviado
+              </p>
+              <p
+                className="mt-1 text-sm text-slate/70"
+                style={{ animation: 'adviceFadeInUp 0.6s ease-out 1.8s both' }}
+              >
+                Puedes enviar otro consejo si lo deseas
+              </p>
             </div>
           ) : (
             <div
