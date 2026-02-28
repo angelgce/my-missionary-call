@@ -64,6 +64,8 @@ function AdvicePage() {
     } catch (err: unknown) {
       if (typeof err === 'string') {
         setRejectionReason(err);
+      } else {
+        setRejectionReason('Ocurrió un error al enviar. Intenta de nuevo.');
       }
     }
     setSubmitting(false);

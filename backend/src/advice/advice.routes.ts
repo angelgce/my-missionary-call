@@ -5,7 +5,6 @@ import { z } from 'zod';
 import type { Env } from '../worker';
 import { getDb } from '../lib/db';
 import { authMiddleware } from '../auth/auth.middleware';
-import { AIService } from '../ai/ai.service';
 import { AdviceRepository } from './advice.repository';
 import { AdviceService } from './advice.service';
 
@@ -22,13 +21,6 @@ export const adviceRoutes = new Hono<{ Bindings: Env }>()
     const ipAddress = c.req.header('cf-connecting-ip')
       || c.req.header('x-forwarded-for')
       || 'unknown';
-
-    // AI moderation
-    const aiService = new AIService(c.env.AI);
-    const moderation = await aiService.moderateAdvice(data.advice);
-    if (!moderation.approved) {
-      return c.json({ error: 'rejected', reason: moderation.reason }, 400);
-    }
 
     const db = getDb(c.env.DATABASE_URL);
     const repo = new AdviceRepository(db);

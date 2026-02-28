@@ -248,23 +248,29 @@ Message to analyze:
 
 JSON:`;
 
-    const response = (await this.ai.run(MODEL, {
-      messages: [{ role: 'user', content: prompt }],
-    })) as { response?: string };
-
-    const responseText = response.response || '';
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return { approved: true, reason: '' };
-    }
-
     try {
+      const aiPromise = this.ai.run(MODEL, {
+        messages: [{ role: 'user', content: prompt }],
+      });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('AI moderation timeout')), 10000)
+      );
+
+      const response = (await Promise.race([aiPromise, timeoutPromise])) as { response?: string };
+
+      const responseText = response.response || '';
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        return { approved: true, reason: '' };
+      }
+
       const parsed = JSON.parse(jsonMatch[0]);
       return {
         approved: Boolean(parsed.approved),
         reason: String(parsed.reason || ''),
       };
     } catch {
+      // Auto-approve if AI is unavailable or times out
       return { approved: true, reason: '' };
     }
   }
