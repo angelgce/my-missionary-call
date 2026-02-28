@@ -35,6 +35,7 @@ interface WorldMapProps {
   focusCoords?: { lat: number; lng: number; key: number } | null;
   onMapClick?: (lng: number, lat: number) => void;
   onStateClick?: (stateCode: string) => void;
+  onPredictionClick?: (prediction: Prediction) => void;
   onBackToWorld?: () => void;
   onCoordinatesChange?: (lat: number, lng: number) => void;
   initialPin?: PinPosition;
@@ -62,6 +63,7 @@ function WorldMap({
   focusCoords,
   onMapClick,
   onStateClick,
+  onPredictionClick,
   onBackToWorld,
   onCoordinatesChange,
   initialPin,
@@ -74,6 +76,7 @@ function WorldMap({
 
   const [pin, setPin] = useState<PinPosition | null>(initialPin ?? null);
   const [lineCoords, setLineCoords] = useState<{ x1: number; y1: number; x2: number; y2: number }[]>([]);
+  const [activePredictionId, setActivePredictionId] = useState<string | null>(null);
 
   // Set initial pin from pre-filled data
   useEffect(() => {
@@ -212,6 +215,7 @@ function WorldMap({
 
   const handleClick = useCallback(
     (e: MapLayerMouseEvent) => {
+      setActivePredictionId(null);
       const { lng, lat } = e.lngLat;
       setPin({ lng, lat });
       onCoordinatesChange?.(lat, lng);
@@ -277,9 +281,9 @@ function WorldMap({
               <svg width="32" height="42" viewBox="0 0 32 42" fill="none">
                 <path
                   d="M16 0C7.16 0 0 7.16 0 16c0 12 16 26 16 26s16-14 16-26C32 7.16 24.84 0 16 0z"
-                  fill="#3B2140"
+                  fill="#FFFFFF"
                 />
-                <circle cx="16" cy="15" r="6" fill="#D4849B" />
+                <circle cx="16" cy="15" r="6" fill="#FFF" />
               </svg>
             </div>
           </MapMarker>
@@ -300,9 +304,12 @@ function WorldMap({
             >
               <div className="group relative flex cursor-pointer flex-col items-center">
                 <div className="h-2.5 w-2.5 rounded-full border-2 border-white bg-gold shadow transition-all group-hover:h-3.5 group-hover:w-3.5 group-hover:bg-gold-dark" />
-                <span className="pointer-events-none absolute -top-6 whitespace-nowrap rounded-md bg-white/90 px-2 py-0.5 text-[10px] font-medium text-navy opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
-                  {s.name}
-                </span>
+                <div className="pointer-events-none absolute -top-2 -translate-y-full scale-95 opacity-0 transition-all duration-200 group-hover:scale-100 group-hover:opacity-100">
+                  <div className="relative whitespace-nowrap rounded-lg border border-gold/20 bg-white px-2.5 py-1.5 shadow-lg">
+                    <p className="text-[10px] font-semibold text-navy">{s.name}</p>
+                    <div className="absolute -bottom-1.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rotate-45 border-b border-r border-gold/20 bg-white" />
+                  </div>
+                </div>
               </div>
             </MapMarker>
           ))}
@@ -312,30 +319,51 @@ function WorldMap({
           .filter((p) => p.latitude && p.longitude)
           .map((p) => {
             const isHighlighted = p.id === highlightedPredictionId;
+            const isActive = p.id === activePredictionId;
             return (
               <MapMarker
                 key={p.id}
                 longitude={parseFloat(p.longitude!)}
                 latitude={parseFloat(p.latitude!)}
                 anchor="bottom"
+                onClick={(e) => {
+                  e.originalEvent.stopPropagation();
+                  setActivePredictionId(isActive ? null : p.id);
+                  onPredictionClick?.(p);
+                }}
               >
-                <div className="group relative flex flex-col items-center">
+                <div className="group relative flex cursor-pointer flex-col items-center">
                   <svg
-                    width={isHighlighted ? 28 : 20}
-                    height={isHighlighted ? 36 : 26}
+                    width={isHighlighted || isActive ? 28 : 20}
+                    height={isHighlighted || isActive ? 36 : 26}
                     viewBox="0 0 32 42"
                     fill="none"
                     className="transition-all duration-300"
                   >
                     <path
                       d="M16 0C7.16 0 0 7.16 0 16c0 12 16 26 16 26s16-14 16-26C32 7.16 24.84 0 16 0z"
-                      fill={isHighlighted ? '#B8860B' : '#D4849B'}
+                      fill={isHighlighted || isActive ? '#B8860B' : '#D4849B'}
                     />
-                    <circle cx="16" cy="15" r="6" fill={isHighlighted ? '#FFF' : '#3B2140'} />
+                    <circle cx="16" cy="15" r="6" fill={isHighlighted || isActive ? '#FFF' : '#3B2140'} />
                   </svg>
-                  <span className="pointer-events-none absolute -top-6 whitespace-nowrap rounded-md bg-white/90 px-2 py-0.5 text-[10px] font-medium text-navy opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
-                    {p.guestName}: {p.city}, {p.state}
-                  </span>
+                  {/* Tooltip */}
+                  <div
+                    className={`pointer-events-none absolute -top-2 -translate-y-full transition-all duration-200 ${
+                      isActive ? 'scale-100 opacity-100' : 'scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100'
+                    }`}
+                  >
+                    <div className="relative whitespace-nowrap rounded-lg border border-gold/20 bg-white px-3 py-2 shadow-lg">
+                      <p className="text-xs font-bold text-navy">{p.guestName}</p>
+                      <p className="mt-0.5 text-[10px] text-navy/60">
+                        {p.city}{p.state ? `, ${p.state}` : ''}
+                      </p>
+                      {p.country && (
+                        <p className="text-[9px] text-gold/70">{p.country}</p>
+                      )}
+                      {/* Arrow */}
+                      <div className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-gold/20 bg-white" />
+                    </div>
+                  </div>
                 </div>
               </MapMarker>
             );

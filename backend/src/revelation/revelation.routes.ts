@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type { Env } from '../worker';
 import { getDb } from '../lib/db';
 import { authMiddleware } from '../auth/auth.middleware';
+import { verifyToken } from '../lib/jwt';
 import { RevelationRepository } from './revelation.repository';
 import { RevelationService } from './revelation.service';
 import { AIService } from '../ai/ai.service';
@@ -31,8 +32,19 @@ function getService(env: Env) {
 
 export const revelationRoutes = new Hono<{ Bindings: Env }>()
   .get('/', async (c) => {
+    let isAdmin = false;
+    const token = c.req.header('Authorization')?.slice(7);
+    if (token) {
+      try {
+        await verifyToken(token, c.env.JWT_SECRET);
+        isAdmin = true;
+      } catch {
+        // Invalid token — proceed as guest
+      }
+    }
+
     const service = getService(c.env);
-    const rev = await service.get();
+    const rev = await service.get(isAdmin);
     return c.json(rev);
   })
   .get('/admin', authMiddleware, async (c) => {
@@ -42,8 +54,19 @@ export const revelationRoutes = new Hono<{ Bindings: Env }>()
   })
   .get('/destination', async (c) => {
     try {
+      let isAdmin = false;
+      const token = c.req.header('Authorization')?.slice(7);
+      if (token) {
+        try {
+          await verifyToken(token, c.env.JWT_SECRET);
+          isAdmin = true;
+        } catch {
+          // Invalid token — proceed as guest
+        }
+      }
+
       const service = getService(c.env);
-      const result = await service.getDestinationCoordinates(c.env.AI, c.env.KV);
+      const result = await service.getDestinationCoordinates(c.env.AI, c.env.KV, isAdmin);
       if (!result) {
         return c.json({ error: 'Not yet revealed' }, 403);
       }

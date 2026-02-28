@@ -94,6 +94,10 @@ function Home() {
   const [adviceErrors, setAdviceErrors] = useState({ guestName: false, advice: false });
   const [adviceRejection, setAdviceRejection] = useState<string | null>(null);
   const [showAdviceHint, setShowAdviceHint] = useState(false);
+  const [marquePaused, setMarqueePaused] = useState(false);
+  const marqueeRef = useRef<HTMLDivElement>(null);
+  const marqueeDragRef = useRef({ isDown: false, startX: 0, scrollLeft: 0 });
+  const marqueeResumeTimer = useRef<ReturnType<typeof setTimeout>>();
   const adviceSectionRef = useRef<HTMLDivElement>(null);
   const mapSectionRef = useRef<HTMLDivElement>(null);
 
@@ -102,6 +106,7 @@ function Home() {
   const predictions = useAppSelector((s) => s.prediction.predictions);
   const adviceGuestName = useAppSelector((s) => s.advice.guestName);
   const adviceText = useAppSelector((s) => s.advice.advice);
+  const isAdmin = useAppSelector((s) => s.admin.isAuthenticated);
 
   // Custom hooks
   const { phase, messages, hintCount, isLoading, initChat, sendMessage, resetChat } = useHintsChat();
@@ -122,10 +127,10 @@ function Home() {
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
-    if (!eventSettings?.openingDate || isRevealed) return;
+    if (!eventSettings?.openingDate) return;
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(tick);
-  }, [eventSettings?.openingDate, isRevealed]);
+  }, [eventSettings?.openingDate]);
 
   const { countdown, openingDateFormatted } = useMemo(() => {
     if (!eventSettings?.openingDate) return { countdown: null, openingDateFormatted: '' };
@@ -156,6 +161,9 @@ function Home() {
     const seconds = Math.floor((diff / 1000) % 60);
     return { countdown: { days, hours, minutes, seconds, expired: false }, openingDateFormatted: formatted };
   }, [eventSettings?.openingDate, now]);
+
+  const isFreeForAll = isRevealed && (countdown?.expired === true || !eventSettings?.openingDate);
+  const canOpenEnvelope = isFreeForAll || (isAdmin && isRevealed);
 
   // Effects
   useEffect(() => {
@@ -204,6 +212,61 @@ function Home() {
     };
     fetchSignature();
   }, [showModal]);
+
+  // Marquee auto-scroll
+  useEffect(() => {
+    const el = marqueeRef.current;
+    if (!el || predictions.length <= 3) return;
+
+    let raf: number;
+    const speed = 0.5; // px per frame
+
+    const step = () => {
+      if (!marquePaused && el) {
+        el.scrollLeft += speed;
+        // Loop: when halfway scrolled (duplicated content), reset to start
+        if (el.scrollLeft >= el.scrollWidth / 2) {
+          el.scrollLeft = 0;
+        }
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [predictions.length, marquePaused]);
+
+  // Marquee interaction handlers
+  const handleMarqueeInteractionStart = useCallback(() => {
+    clearTimeout(marqueeResumeTimer.current);
+    setMarqueePaused(true);
+  }, []);
+
+  const handleMarqueeInteractionEnd = useCallback(() => {
+    clearTimeout(marqueeResumeTimer.current);
+    marqueeResumeTimer.current = setTimeout(() => setMarqueePaused(false), 3000);
+  }, []);
+
+  const handleMarqueeMouseDown = useCallback((e: React.MouseEvent) => {
+    const el = marqueeRef.current;
+    if (!el) return;
+    marqueeDragRef.current = { isDown: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft };
+    handleMarqueeInteractionStart();
+  }, [handleMarqueeInteractionStart]);
+
+  const handleMarqueeMouseMove = useCallback((e: React.MouseEvent) => {
+    const drag = marqueeDragRef.current;
+    if (!drag.isDown) return;
+    e.preventDefault();
+    const el = marqueeRef.current;
+    if (!el) return;
+    const x = e.pageX - el.offsetLeft;
+    el.scrollLeft = drag.scrollLeft - (x - drag.startX);
+  }, []);
+
+  const handleMarqueeMouseUp = useCallback(() => {
+    marqueeDragRef.current.isDown = false;
+    handleMarqueeInteractionEnd();
+  }, [handleMarqueeInteractionEnd]);
 
   // Event handlers
   const handleGlobalMapClick = useCallback((lng: number, lat: number) => {
@@ -303,10 +366,9 @@ function Home() {
   };
 
   const handleOpenLetter = () => {
-    if (isRevealed) {
-      setShowChat(true);
-      initChat();
-    }
+    if (!canOpenEnvelope) return;
+    setShowChat(true);
+    initChat();
   };
 
   const handleShowLetter = () => {
@@ -480,9 +542,9 @@ function Home() {
         <div>
           <div
             onClick={handleOpenLetter}
-            className={`group relative mx-auto w-72 tablet:w-96 ${isRevealed ? 'cursor-pointer' : 'cursor-default'}`}
+            className={`group relative mx-auto w-72 tablet:w-96 ${canOpenEnvelope ? 'cursor-pointer' : 'cursor-default'}`}
             style={{
-              animation: isRevealed ? 'envelopeFloat 3s ease-in-out infinite' : 'none',
+              animation: canOpenEnvelope ? 'envelopeFloat 3s ease-in-out infinite' : 'none',
             }}
           >
             {/* Floating shadow */}
@@ -492,7 +554,7 @@ function Home() {
             />
 
             {/* Glow when ready */}
-            {isRevealed && (
+            {canOpenEnvelope && (
               <div
                 className="absolute -inset-10 z-0 rounded-full"
                 style={{
@@ -505,13 +567,13 @@ function Home() {
             {/* Envelope body */}
             <div
               className={`relative z-10 overflow-hidden rounded-sm transition-transform duration-300 ${
-                isRevealed ? 'group-hover:scale-[1.03]' : ''
+                canOpenEnvelope ? 'group-hover:scale-[1.03]' : ''
               }`}
               style={{
                 background: '#FAE5ED',
                 boxShadow: '0 10px 40px rgba(59,33,64,0.12), 0 2px 8px rgba(59,33,64,0.06)',
                 aspectRatio: '7 / 5',
-                animation: isRevealed ? 'sparklePulse 3s ease-in-out infinite' : 'none',
+                animation: canOpenEnvelope ? 'sparklePulse 3s ease-in-out infinite' : 'none',
               }}
             >
               {/* Gold ornamental border on body */}
@@ -703,7 +765,7 @@ function Home() {
                   Llamada a Servir
                 </p>
 
-                {isRevealed && (
+                {canOpenEnvelope && (
                   <p
                     className="mt-2 text-[10px] font-medium"
                     style={{
@@ -721,23 +783,24 @@ function Home() {
             </div>
           </div>
 
-          {!isRevealed && (
+          {(!isRevealed || (isRevealed && !isFreeForAll && !isAdmin)) && (
             <div className="mx-auto mt-3 max-w-xs space-y-1.5 text-center">
-              {eventSettings?.openingDate && countdown && (
-                <div className="animate-countdown-fade space-y-3">
-                  {countdown.expired ? (
-                    <p
-                      className="font-serif text-sm font-semibold tracking-wide text-gold"
-                      style={{ animation: 'textGlow 2s ease-in-out infinite' }}
-                    >
-                      Ya es hora!
-                    </p>
-                  ) : (
-                    <>
+              {isRevealed && !isFreeForAll && !isAdmin ? (
+                <div className="space-y-2">
+                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-gold/30 bg-cream">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gold/70">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-navy/70">
+                    El llamamiento sera revelado pronto
+                  </p>
+                  {eventSettings?.openingDate && countdown && !countdown.expired && (
+                    <div className="space-y-2">
                       <p className="text-[10px] uppercase tracking-[0.15em] text-gold/60">
-                        Fecha de apertura
+                        Se revela en
                       </p>
-
                       <div className="flex items-center justify-center gap-1">
                         {[
                           { value: countdown.days, label: 'Días' },
@@ -752,7 +815,6 @@ function Home() {
                                 style={{
                                   background: 'rgba(248, 224, 232, 0.35)',
                                   animationDelay: `${i * 0.3}s`,
-                                  perspective: '200px',
                                 }}
                               >
                                 <span
@@ -768,54 +830,114 @@ function Home() {
                               </span>
                             </div>
                             {i < 3 && (
-                              <span
-                                className="animate-countdown-colon mb-3 px-0.5 font-serif text-sm text-gold/50"
-                              >
-                                :
-                              </span>
+                              <span className="animate-countdown-colon mb-3 px-0.5 font-serif text-sm text-gold/50">:</span>
                             )}
                           </div>
                         ))}
                       </div>
-
                       <p className="text-[10px] italic text-slate/40">
                         {openingDateFormatted}
                       </p>
-                    </>
+                    </div>
                   )}
                 </div>
-              )}
-              {eventSettings?.locationAddress && (
-                <p className="text-[11px] text-slate/60">
-                  <span className="font-medium text-gold/80">Lugar:</span>{' '}
-                  {eventSettings.locationUrl ? (
+              ) : (
+                <>
+                  {eventSettings?.openingDate && countdown && (
+                    <div className="animate-countdown-fade space-y-3">
+                      {countdown.expired ? (
+                        <p
+                          className="font-serif text-sm font-semibold tracking-wide text-gold"
+                          style={{ animation: 'textGlow 2s ease-in-out infinite' }}
+                        >
+                          Ya es hora!
+                        </p>
+                      ) : (
+                        <>
+                          <p className="text-[10px] uppercase tracking-[0.15em] text-gold/60">
+                            Fecha de apertura
+                          </p>
+
+                          <div className="flex items-center justify-center gap-1">
+                            {[
+                              { value: countdown.days, label: 'Días' },
+                              { value: countdown.hours, label: 'Hrs' },
+                              { value: countdown.minutes, label: 'Min' },
+                              { value: countdown.seconds, label: 'Seg' },
+                            ].map(({ value, label }, i) => (
+                              <div key={label} className="flex items-center">
+                                <div className="flex flex-col items-center">
+                                  <div
+                                    className="animate-countdown-pulse rounded-lg border border-gold/15 px-2 py-1.5"
+                                    style={{
+                                      background: 'rgba(248, 224, 232, 0.35)',
+                                      animationDelay: `${i * 0.3}s`,
+                                      perspective: '200px',
+                                    }}
+                                  >
+                                    <span
+                                      key={value}
+                                      className="block font-serif text-lg font-bold tabular-nums text-navy"
+                                      style={{ animation: 'countdownFlipIn 0.4s ease-out' }}
+                                    >
+                                      {String(value).padStart(2, '0')}
+                                    </span>
+                                  </div>
+                                  <span className="mt-1 text-[8px] uppercase tracking-[0.12em] text-slate/60">
+                                    {label}
+                                  </span>
+                                </div>
+                                {i < 3 && (
+                                  <span
+                                    className="animate-countdown-colon mb-3 px-0.5 font-serif text-sm text-gold/50"
+                                  >
+                                    :
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+
+                          <p className="text-[10px] italic text-slate/40">
+                            {openingDateFormatted}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {eventSettings?.locationAddress && (
+                    <p className="text-[11px] text-slate/60">
+                      <span className="font-medium text-gold/80">Lugar:</span>{' '}
+                      {eventSettings.locationUrl ? (
+                        <a
+                          href={eventSettings.locationUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline decoration-gold/30 underline-offset-2 transition-colors hover:text-gold"
+                        >
+                          {eventSettings.locationAddress}
+                        </a>
+                      ) : (
+                        eventSettings.locationAddress
+                      )}
+                    </p>
+                  )}
+                  {eventSettings?.locationUrl && !eventSettings?.locationAddress && (
                     <a
                       href={eventSettings.locationUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="underline decoration-gold/30 underline-offset-2 transition-colors hover:text-gold"
+                      className="inline-block text-[11px] font-medium text-gold/80 underline decoration-gold/30 underline-offset-2 transition-colors hover:text-gold"
                     >
-                      {eventSettings.locationAddress}
+                      Ver en Google Maps
                     </a>
-                  ) : (
-                    eventSettings.locationAddress
                   )}
-                </p>
-              )}
-              {eventSettings?.locationUrl && !eventSettings?.locationAddress && (
-                <a
-                  href={eventSettings.locationUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block text-[11px] font-medium text-gold/80 underline decoration-gold/30 underline-offset-2 transition-colors hover:text-gold"
-                >
-                  Ver en Google Maps
-                </a>
-              )}
-              {!eventSettings?.openingDate && !eventSettings?.locationAddress && (
-                <p className="text-[10px] text-slate/35">
-                  El llamamiento será revelado durante el evento
-                </p>
+                  {!eventSettings?.openingDate && !eventSettings?.locationAddress && (
+                    <p className="text-[10px] text-slate/35">
+                      El llamamiento será revelado durante el evento
+                    </p>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -918,13 +1040,19 @@ function Home() {
               <p className="mb-2 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-gold tablet:text-xs">
                 {predictions.length} {predictions.length === 1 ? 'predicción' : 'predicciones'}
               </p>
-              <div className="overflow-hidden px-2 tablet:px-0">
+              <div
+                ref={predShouldScroll ? marqueeRef : undefined}
+                className={`hide-scrollbar px-2 tablet:px-0 ${predShouldScroll ? 'cursor-grab overflow-x-auto active:cursor-grabbing' : 'overflow-hidden'}`}
+                onTouchStart={predShouldScroll ? handleMarqueeInteractionStart : undefined}
+                onTouchEnd={predShouldScroll ? handleMarqueeInteractionEnd : undefined}
+                onMouseDown={predShouldScroll ? handleMarqueeMouseDown : undefined}
+                onMouseMove={predShouldScroll ? handleMarqueeMouseMove : undefined}
+                onMouseUp={predShouldScroll ? handleMarqueeMouseUp : undefined}
+                onMouseLeave={predShouldScroll ? handleMarqueeMouseUp : undefined}
+              >
                 <div
                   className={`flex gap-2 tablet:gap-3 ${predShouldScroll ? '' : 'justify-center'}`}
-                  style={predShouldScroll ? {
-                    width: 'max-content',
-                    animation: `marqueeScroll ${Math.max(predictions.length * 4, 12)}s linear infinite`,
-                  } : undefined}
+                  style={predShouldScroll ? { width: 'max-content' } : undefined}
                 >
                   {(predShouldScroll ? [...predictions, ...predictions] : predictions).map((p, i) => (
                     <div
@@ -977,6 +1105,7 @@ function Home() {
               cities={[]}
               predictions={predictions}
               onMapClick={handleGlobalMapClick}
+              onPredictionClick={() => {}}
             />
           </Suspense>
           <p className="mt-2 text-center text-xs text-slate/60">
@@ -1150,7 +1279,7 @@ function Home() {
       )}
 
       {/* Revelation Letter Modal */}
-      {showModal && data?.isRevealed && (
+      {showModal && canOpenEnvelope && data && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-2 tablet:p-8"
           onClick={() => setShowModal(false)}
@@ -1443,7 +1572,7 @@ function Home() {
         </div>
       )}
       {/* Google Maps — event location */}
-      {!isRevealed && eventSettings?.locationUrl && (() => {
+      {!isFreeForAll && eventSettings?.locationUrl && (() => {
         const url = eventSettings.locationUrl;
         let embedSrc = '';
         if (url.includes('/embed')) {

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 import api from '@/core/services/api';
+import { useAppSelector } from '@/core/hooks/useAppDispatch';
 
 import PageContainer from '@/shared/components/PageContainer';
 import DecorativeDivider from '@/shared/components/DecorativeDivider';
@@ -20,6 +21,10 @@ function RevelationPage() {
   // Local state
   const [data, setData] = useState<RevelationData | null>(null);
   const [coverOpened, setCoverOpened] = useState(false);
+  const [eventSettings, setEventSettings] = useState<{ openingDate: string } | null>(null);
+
+  // Redux selectors
+  const isAdmin = useAppSelector((s) => s.admin.isAuthenticated);
 
   // Effects
   useEffect(() => {
@@ -28,6 +33,14 @@ function RevelationPage() {
         const res = await api.get('/revelation');
         if (res.data) {
           setData(res.data);
+        }
+      } catch {
+        // silently fail
+      }
+      try {
+        const settingsRes = await api.get('/revelation/event-settings');
+        if (settingsRes?.data) {
+          setEventSettings(settingsRes.data);
         }
       } catch {
         // silently fail
@@ -48,6 +61,18 @@ function RevelationPage() {
   const language = data?.language ?? 'Idioma';
   const trainingCenter = data?.trainingCenter ?? 'Ciudad CCM';
   const entryDate = data?.entryDate ?? 'DD de Mes de AAAA';
+
+  const isDateExpired = useMemo(() => {
+    if (!eventSettings?.openingDate) return true;
+    const localDate = new Date(eventSettings.openingDate);
+    const VILLAHERMOSA_OFFSET_MIN = 360;
+    const adjustment = (VILLAHERMOSA_OFFSET_MIN - localDate.getTimezoneOffset()) * 60_000;
+    const targetUtc = localDate.getTime() + adjustment;
+    return Date.now() >= targetUtc;
+  }, [eventSettings?.openingDate]);
+
+  const isFreeForAll = isRevealed && isDateExpired;
+  const canViewContent = isFreeForAll || (isAdmin && isRevealed);
 
   return (
     <PageContainer>
@@ -99,21 +124,21 @@ function RevelationPage() {
               <div className="rounded-xl bg-cream py-4 text-center">
                 <p className="text-sm uppercase tracking-wider text-slate/60">Misión</p>
                 <p className="mt-1 text-2xl font-bold text-navy tablet:text-3xl">
-                  <BlurredField text={missionName} isRevealed={isRevealed} />
+                  <BlurredField text={missionName} isRevealed={canViewContent} />
                 </p>
               </div>
 
               <p className="leading-relaxed">
                 hablando el idioma{' '}
                 <span className="font-semibold">
-                  <BlurredField text={language} isRevealed={isRevealed} />
+                  <BlurredField text={language} isRevealed={canViewContent} />
                 </span>
                 .
               </p>
 
               <p className="leading-relaxed">
                 Se espera que se presente en el Centro de Capacitación Misional de{' '}
-                <BlurredField text={trainingCenter} isRevealed={isRevealed} /> el día
+                <BlurredField text={trainingCenter} isRevealed={canViewContent} /> el día
               </p>
 
               <div className="rounded-xl bg-cream py-4 text-center">
@@ -121,7 +146,7 @@ function RevelationPage() {
                   Fecha de Entrada al CCM
                 </p>
                 <p className="mt-1 text-xl font-bold text-navy">
-                  <BlurredField text={entryDate} isRevealed={isRevealed} />
+                  <BlurredField text={entryDate} isRevealed={canViewContent} />
                 </p>
               </div>
 
@@ -143,11 +168,13 @@ function RevelationPage() {
 
         {/* Instruction */}
         <p className="mt-6 text-center text-sm text-slate/50">
-          {isRevealed
+          {canViewContent
             ? '¡La misión ha sido revelada!'
-            : coverOpened
-              ? 'La información borrosa será revelada durante el evento.'
-              : 'Toca la carta para abrirla'}
+            : isRevealed && !isFreeForAll && !isAdmin
+              ? 'El llamamiento sera revelado cuando llegue la fecha de apertura.'
+              : coverOpened
+                ? 'La información borrosa será revelada durante el evento.'
+                : 'Toca la carta para abrirla'}
         </p>
       </div>
     </PageContainer>

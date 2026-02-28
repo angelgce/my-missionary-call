@@ -9,7 +9,7 @@ export class RevelationService {
     private encryptionKey: string,
   ) {}
 
-  async get() {
+  async get(isAdmin = false) {
     const rev = await this.repo.findFirst();
     if (!rev) return null;
 
@@ -24,25 +24,34 @@ export class RevelationService {
       this.encryptionKey,
     );
 
+    const masked = {
+      id: rev.id,
+      isRevealed: rev.isRevealed,
+      missionaryName: decrypted.missionaryName,
+      missionName: '???',
+      language: '???',
+      trainingCenter: '???',
+      entryDate: '???',
+      pdfText: null,
+      openingDate: rev.openingDate,
+      locationAddress: rev.locationAddress,
+      locationUrl: rev.locationUrl,
+      createdAt: rev.createdAt,
+      updatedAt: rev.updatedAt,
+    };
+
     if (!rev.isRevealed) {
-      return {
-        id: rev.id,
-        isRevealed: false,
-        missionaryName: decrypted.missionaryName,
-        missionName: '???',
-        language: '???',
-        trainingCenter: '???',
-        entryDate: '???',
-        pdfText: null,
-        openingDate: rev.openingDate,
-        locationAddress: rev.locationAddress,
-        locationUrl: rev.locationUrl,
-        createdAt: rev.createdAt,
-        updatedAt: rev.updatedAt,
-      };
+      return { ...masked, isRevealed: false };
     }
 
-    // Decrypt pdfText and normalizedPdfText when revealed
+    // Revealed but check if date has passed (Villahermosa UTC-6)
+    const isFreeForAll = this.isOpeningDateExpired(rev.openingDate);
+
+    if (!isFreeForAll && !isAdmin) {
+      return masked;
+    }
+
+    // Admin or date expired — return full data
     let pdfText: string | null = null;
     if (rev.pdfText) {
       pdfText = await decrypt(rev.pdfText, this.encryptionKey);
@@ -59,6 +68,15 @@ export class RevelationService {
       pdfText,
       normalizedPdfText,
     };
+  }
+
+  private isOpeningDateExpired(openingDate: string | null): boolean {
+    if (!openingDate) return true;
+    // openingDate is stored as a local date string (Villahermosa UTC-6 = offset 360 min)
+    const VILLAHERMOSA_OFFSET_MS = 6 * 60 * 60_000;
+    const target = new Date(openingDate);
+    const targetUtc = target.getTime() + VILLAHERMOSA_OFFSET_MS;
+    return Date.now() >= targetUtc;
   }
 
   async getAdmin() {
@@ -161,9 +179,13 @@ export class RevelationService {
   async getDestinationCoordinates(
     ai: Ai,
     kv: KVNamespace,
+    isAdmin = false,
   ): Promise<{ lat: number; lng: number; missionName: string } | null> {
     const rev = await this.repo.findFirst();
     if (!rev || !rev.isRevealed) return null;
+
+    const isFreeForAll = this.isOpeningDateExpired(rev.openingDate);
+    if (!isFreeForAll && !isAdmin) return null;
 
     // Check KV cache first
     const cached = (await kv.get('revelation:destination', 'json')) as {
