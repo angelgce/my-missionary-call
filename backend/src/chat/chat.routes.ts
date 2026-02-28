@@ -38,6 +38,7 @@ export const chatRoutes = new Hono<{ Bindings: Env }>()
         const decrypted = await decryptRevelation(
           {
             missionaryName: rev.missionaryName,
+            missionaryAddress: rev.missionaryAddress,
             missionName: rev.missionName,
             language: rev.language,
             trainingCenter: rev.trainingCenter,

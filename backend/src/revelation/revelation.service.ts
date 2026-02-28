@@ -16,6 +16,7 @@ export class RevelationService {
     const decrypted = await decryptRevelation(
       {
         missionaryName: rev.missionaryName,
+        missionaryAddress: rev.missionaryAddress,
         missionName: rev.missionName,
         language: rev.language,
         trainingCenter: rev.trainingCenter,
@@ -28,6 +29,7 @@ export class RevelationService {
       id: rev.id,
       isRevealed: rev.isRevealed,
       missionaryName: decrypted.missionaryName,
+      missionaryAddress: '???',
       missionName: '???',
       language: '???',
       trainingCenter: '???',
@@ -86,6 +88,7 @@ export class RevelationService {
     const decrypted = await decryptRevelation(
       {
         missionaryName: rev.missionaryName,
+        missionaryAddress: rev.missionaryAddress,
         missionName: rev.missionName,
         language: rev.language,
         trainingCenter: rev.trainingCenter,
@@ -98,6 +101,7 @@ export class RevelationService {
       id: rev.id,
       isRevealed: rev.isRevealed,
       missionaryName: decrypted.missionaryName,
+      missionaryAddress: '••••••••',
       missionName: '••••••••',
       language: '••••••••',
       trainingCenter: '••••••••',
@@ -113,6 +117,7 @@ export class RevelationService {
 
   async updateFromPdf(data: {
     missionaryName: string;
+    missionaryAddress: string;
     missionName: string;
     language: string;
     trainingCenter: string;
@@ -123,6 +128,7 @@ export class RevelationService {
     const encrypted = await encryptRevelation(
       {
         missionaryName: data.missionaryName,
+        missionaryAddress: data.missionaryAddress,
         missionName: data.missionName,
         language: data.language,
         trainingCenter: data.trainingCenter,
@@ -139,6 +145,7 @@ export class RevelationService {
 
   async update(data: {
     missionaryName: string;
+    missionaryAddress: string;
     missionName: string;
     language: string;
     trainingCenter: string;
@@ -209,6 +216,7 @@ export class RevelationService {
     const decrypted = await decryptRevelation(
       {
         missionaryName: rev.missionaryName,
+        missionaryAddress: rev.missionaryAddress,
         missionName: rev.missionName,
         language: rev.language,
         trainingCenter: rev.trainingCenter,

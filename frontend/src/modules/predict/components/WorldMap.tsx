@@ -77,6 +77,7 @@ function WorldMap({
   const [pin, setPin] = useState<PinPosition | null>(initialPin ?? null);
   const [lineCoords, setLineCoords] = useState<{ x1: number; y1: number; x2: number; y2: number }[]>([]);
   const [activePredictionId, setActivePredictionId] = useState<string | null>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   // Set initial pin from pre-filled data
   useEffect(() => {
@@ -166,9 +167,9 @@ function WorldMap({
     }
   }, [focusCoords?.key]);
 
-  // Fly to fit all predictions + destination
+  // Fly to fit all predictions + destination (wait for map to be ready)
   useEffect(() => {
-    if (!destination || predictions.length === 0) return;
+    if (!mapReady || !destination || predictions.length === 0) return;
     const map = mapRef.current;
     if (!map) return;
 
@@ -189,7 +190,7 @@ function WorldMap({
       ],
       { padding: 50, duration: 1500 }
     );
-  }, [destination, predictions.length]);
+  }, [mapReady, destination, predictions.length]);
 
   // Project lat/lng to pixel coords for SVG overlay lines
   const updateLineCoords = useCallback(() => {
@@ -271,6 +272,7 @@ function WorldMap({
         cursor="crosshair"
         onClick={handleClick}
         onRender={updateLineCoords}
+        onLoad={() => setMapReady(true)}
       >
         <NavigationControl position="bottom-right" showCompass={false} />
 

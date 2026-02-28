@@ -18,6 +18,7 @@ const eventSettingsSchema = z.object({
 
 const updateSchema = z.object({
   missionaryName: z.string().min(1),
+  missionaryAddress: z.string().default(''),
   missionName: z.string().min(1),
   language: z.string().min(1),
   trainingCenter: z.string().min(1),
@@ -139,7 +140,7 @@ export const revelationRoutes = new Hono<{ Bindings: Env }>()
 
         // Save encrypted to DB (including raw PDF text)
         const service = getService(c.env);
-        await service.updateFromPdf({ ...extracted, pdfText: text });
+        await service.updateFromPdf({ ...extracted, missionaryAddress: extracted.missionaryAddress || '', pdfText: text });
 
         // Only return missionaryName, keep the rest hidden
         return c.json({
@@ -178,6 +179,7 @@ export const revelationRoutes = new Hono<{ Bindings: Env }>()
       'json',
       z.object({
         missionaryName: z.string().default(''),
+        missionaryAddress: z.string().default(''),
         missionName: z.string().default(''),
         language: z.string().default(''),
         trainingCenter: z.string().default(''),

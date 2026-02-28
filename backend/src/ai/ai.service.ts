@@ -8,6 +8,7 @@ type Message = {
 
 type MissionaryCallData = {
   missionaryName: string;
+  missionaryAddress: string;
   missionName: string;
   language: string;
   trainingCenter: string;
@@ -17,6 +18,7 @@ type MissionaryCallData = {
 type MissionaryCallDataWithConfidence = MissionaryCallData & {
   confidence: {
     missionaryName: number;
+    missionaryAddress: number;
     missionName: number;
     language: number;
     trainingCenter: number;
@@ -45,6 +47,7 @@ export class AIService {
 Rules:
 - Return plain text values only, no formatting or line breaks.
 - missionaryName: The missionary's name (e.g. "María García López"). Do NOT include "Hermana", "Elder", or titles. Just the name.
+- missionaryAddress: The missionary's full address block (street, city, state, zip, country). It appears at the top of the letter, between the date and the salutation. Use "\\n" to separate lines. Empty string if not found.
 - missionName: The mission name WITHOUT the "Misión" prefix (e.g. if text says "Misión México Ciudad de México Chalco", return "México Ciudad de México Chalco").
 - language: The language they will speak. If not explicitly stated, infer from the mission country.
 - trainingCenter: The MTC/CCM location if mentioned. Empty string if not found.
@@ -74,6 +77,7 @@ JSON:`;
 
     const defaultConfidence = {
       missionaryName: 0,
+      missionaryAddress: 0,
       missionName: 0,
       language: 0,
       trainingCenter: 0,
@@ -82,6 +86,7 @@ JSON:`;
 
     return {
       missionaryName: parsed.missionaryName || '',
+      missionaryAddress: parsed.missionaryAddress || '',
       missionName: parsed.missionName || '',
       language: parsed.language || '',
       trainingCenter: parsed.trainingCenter || '',
@@ -89,6 +94,7 @@ JSON:`;
       confidence: parsed.confidence
         ? {
             missionaryName: Number(parsed.confidence.missionaryName) || 0,
+            missionaryAddress: Number(parsed.confidence.missionaryAddress) || 0,
             missionName: Number(parsed.confidence.missionName) || 0,
             language: Number(parsed.confidence.language) || 0,
             trainingCenter: Number(parsed.confidence.trainingCenter) || 0,

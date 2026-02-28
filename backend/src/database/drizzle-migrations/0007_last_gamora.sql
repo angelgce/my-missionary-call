@@ -1,0 +1,1 @@
+ALTER TABLE "revelation" ADD COLUMN "missionary_address" text DEFAULT '' NOT NULL;

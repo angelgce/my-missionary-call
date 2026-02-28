@@ -13,6 +13,7 @@ export class RevelationRepository {
 
   async upsert(data: {
     missionaryName: string;
+    missionaryAddress: string;
     missionName: string;
     language: string;
     trainingCenter: string;

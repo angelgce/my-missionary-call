@@ -37,10 +37,11 @@ interface PredictionItem {
   createdAt: string;
 }
 
-type ExtractedField = 'missionaryName' | 'missionName' | 'language' | 'trainingCenter' | 'entryDate';
+type ExtractedField = 'missionaryName' | 'missionaryAddress' | 'missionName' | 'language' | 'trainingCenter' | 'entryDate';
 
 interface ExtractedData {
   missionaryName: string;
+  missionaryAddress: string;
   missionName: string;
   language: string;
   trainingCenter: string;
@@ -599,6 +600,7 @@ function AdminDashboardPage() {
               <div className="space-y-3">
                 {[
                   { key: 'missionaryName' as const, label: 'Nombre de la Misionera' },
+                  { key: 'missionaryAddress' as const, label: 'Dirección' },
                   { key: 'missionName' as const, label: 'Misión' },
                   { key: 'language' as const, label: 'Idioma' },
                   { key: 'trainingCenter' as const, label: 'Centro de Capacitación' },

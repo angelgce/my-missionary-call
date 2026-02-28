@@ -44,6 +44,7 @@ export const adviceBox = pgTable('advice_box', {
 export const revelation = pgTable('revelation', {
   id: uuid('id').primaryKey().defaultRandom(),
   missionaryName: text('missionary_name').notNull().default(''),
+  missionaryAddress: text('missionary_address').notNull().default(''),
   missionName: text('mission_name').notNull(),
   language: text('language').notNull(),
   trainingCenter: text('training_center').notNull(),

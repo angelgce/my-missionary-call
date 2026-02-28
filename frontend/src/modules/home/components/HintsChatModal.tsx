@@ -262,7 +262,6 @@ function HintsChatModal({
               style={{ boxShadow: '0 8px 30px rgba(59,33,64,0.25)' }}
             >
               <div className="chat-reveal-shimmer absolute inset-0 pointer-events-none" />
-              <div className="chat-reveal-pulse absolute inset-0 rounded-2xl pointer-events-none" />
               <LockOpenIcon className="relative z-10 h-4 w-4" />
               <span className="relative z-10">Revelar mi Llamamiento</span>
             </button>
@@ -358,14 +357,6 @@ function HintsChatModal({
         @keyframes chatRevealShimmer {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
-        }
-        .chat-reveal-pulse {
-          border: 1.5px solid rgba(212,132,155,0.2);
-          animation: chatRevealPulse 2s ease-in-out infinite;
-        }
-        @keyframes chatRevealPulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0; transform: scale(1.03); }
         }
 
         .chat-last-msg .chat-msg-glow {

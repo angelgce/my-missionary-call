@@ -61,6 +61,7 @@ export async function decrypt(encrypted: string, rawKey: string): Promise<string
 
 const SENSITIVE_FIELDS = [
   'missionaryName',
+  'missionaryAddress',
   'missionName',
   'language',
   'trainingCenter',

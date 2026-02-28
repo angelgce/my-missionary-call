@@ -27,6 +27,7 @@ import { useCountryData } from '@/modules/predict/hooks/useCountryData';
 
 interface RevelationData {
   missionaryName: string;
+  missionaryAddress: string;
   missionName: string;
   language: string;
   trainingCenter: string;
@@ -39,9 +40,7 @@ interface RevelationData {
 const CALL_LETTER_TEMPLATE = `27 de enero de 2026
 
 Hermana {{MISSIONARY_NAME}}
-Calle Belisario Dominguez 127 Colony Primero de Mayo
-Villahermosa Tabasco 86190
-Mexico
+{{ADDRESS}}
 
 Estimada hermana {{MISSIONARY_NAME}}:
 
@@ -71,6 +70,7 @@ function Home() {
   const [langRevealed, setLangRevealed] = useState(false);
   const [dateRevealed, setDateRevealed] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
+  const [letterTextureUrl, setLetterTextureUrl] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [destination, setDestination] = useState<{ lat: number; lng: number; missionName: string } | null>(null);
@@ -213,7 +213,16 @@ function Home() {
         // silently fail
       }
     };
+    const fetchLetterTexture = async () => {
+      try {
+        const res = await api.get('/assets/signed-url/assets/IMG_6273.JPG');
+        setLetterTextureUrl(res.data.url);
+      } catch {
+        // silently fail
+      }
+    };
     fetchSignature();
+    fetchLetterTexture();
   }, [showModal]);
 
   // Marquee auto-scroll
@@ -1323,8 +1332,10 @@ function Home() {
           <div
             className="relative z-10 mx-auto max-h-[92vh] w-full max-w-2xl overflow-hidden"
             style={{
-              background: coverOpened ? '#fff' : 'transparent',
-              boxShadow: coverOpened ? '0 25px 80px rgba(59, 33, 64, 0.35)' : 'none',
+              background: coverOpened ? '#FFFDF8' : 'transparent',
+              boxShadow: coverOpened
+                ? '0 25px 80px rgba(59, 33, 64, 0.35), 0 0 0 1px rgba(191, 155, 48, 0.1)'
+                : 'none',
               transition: 'background 0.5s ease, box-shadow 0.5s ease',
             }}
             onClick={(e) => e.stopPropagation()}
@@ -1343,9 +1354,99 @@ function Home() {
 
             <LetterCover key={coverKey} onReveal={() => { setCoverOpened(true); playSound('amanecer'); }}>
             {/* Scrollable letter content — hidden scrollbar */}
-            <div className="hide-scrollbar max-h-[88vh] overflow-y-auto bg-white px-4 pb-8 pt-8 tablet:max-h-[92vh] tablet:px-16 tablet:pb-16 tablet:pt-12">
+            <div
+              className="hide-scrollbar relative max-h-[88vh] overflow-y-auto tablet:max-h-[92vh]"
+              style={{
+                background: '#FFFDF8',
+                boxShadow: 'inset 0 0 60px rgba(191, 155, 48, 0.04)',
+              }}
+            >
+              {/* Inner wrapper — holds all content + decorative borders */}
+              <div
+                className="relative px-5 pb-10 pt-10 tablet:px-16 tablet:pb-16 tablet:pt-14"
+                style={{
+                  border: '1px solid rgba(191, 155, 48, 0.15)',
+                  margin: '12px',
+                }}
+              >
+              {/* Second inner border */}
+              <div className="pointer-events-none absolute inset-[2px]" style={{ border: '0.5px solid rgba(191, 155, 48, 0.08)' }} />
+
+              {/* Paper texture overlay */}
+              <div
+                className="pointer-events-none absolute inset-0 opacity-[0.025]"
+                style={{
+                  backgroundImage: 'radial-gradient(circle at 1px 1px, #8B7355 0.5px, transparent 0)',
+                  backgroundSize: '20px 20px',
+                }}
+              />
+
+              {/* Photo texture overlay */}
+              {letterTextureUrl && (
+                <img
+                  src={letterTextureUrl}
+                  alt=""
+                  className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.06]"
+                  style={{ mixBlendMode: 'multiply' }}
+                />
+              )}
+
+              {/* Corner flowers — top left */}
+              <svg className="pointer-events-none absolute left-2 top-2 tablet:left-4 tablet:top-4" width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <path d="M8 24C8 24 10 16 6 10C6 10 14 12 18 6C18 6 16 14 22 18" stroke="rgba(191,155,48,0.3)" strokeWidth="0.7" fill="none" strokeLinecap="round" />
+                <path d="M6 10C6 10 12 14 18 6" stroke="rgba(191,155,48,0.15)" strokeWidth="0.5" fill="none" />
+                <ellipse cx="12" cy="8" rx="3" ry="5" transform="rotate(-30 12 8)" fill="rgba(191,155,48,0.08)" stroke="rgba(191,155,48,0.2)" strokeWidth="0.5" />
+                <ellipse cx="7" cy="14" rx="3" ry="5" transform="rotate(20 7 14)" fill="rgba(191,155,48,0.08)" stroke="rgba(191,155,48,0.2)" strokeWidth="0.5" />
+                <ellipse cx="14" cy="14" rx="2.5" ry="4" transform="rotate(-60 14 14)" fill="rgba(191,155,48,0.06)" stroke="rgba(191,155,48,0.18)" strokeWidth="0.5" />
+                <circle cx="10" cy="12" r="1.8" fill="rgba(191,155,48,0.15)" />
+                <circle cx="10" cy="12" r="0.8" fill="rgba(191,155,48,0.3)" />
+                <path d="M10 14C10 14 8 20 4 24" stroke="rgba(191,155,48,0.2)" strokeWidth="0.5" fill="none" strokeLinecap="round" />
+                <path d="M12 14C12 14 16 18 14 24" stroke="rgba(191,155,48,0.15)" strokeWidth="0.4" fill="none" strokeLinecap="round" />
+              </svg>
+              {/* Corner flowers — top right */}
+              <svg className="pointer-events-none absolute right-2 top-2 tablet:right-4 tablet:top-4" width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ transform: 'scaleX(-1)' }}>
+                <path d="M8 24C8 24 10 16 6 10C6 10 14 12 18 6C18 6 16 14 22 18" stroke="rgba(191,155,48,0.3)" strokeWidth="0.7" fill="none" strokeLinecap="round" />
+                <path d="M6 10C6 10 12 14 18 6" stroke="rgba(191,155,48,0.15)" strokeWidth="0.5" fill="none" />
+                <ellipse cx="12" cy="8" rx="3" ry="5" transform="rotate(-30 12 8)" fill="rgba(191,155,48,0.08)" stroke="rgba(191,155,48,0.2)" strokeWidth="0.5" />
+                <ellipse cx="7" cy="14" rx="3" ry="5" transform="rotate(20 7 14)" fill="rgba(191,155,48,0.08)" stroke="rgba(191,155,48,0.2)" strokeWidth="0.5" />
+                <ellipse cx="14" cy="14" rx="2.5" ry="4" transform="rotate(-60 14 14)" fill="rgba(191,155,48,0.06)" stroke="rgba(191,155,48,0.18)" strokeWidth="0.5" />
+                <circle cx="10" cy="12" r="1.8" fill="rgba(191,155,48,0.15)" />
+                <circle cx="10" cy="12" r="0.8" fill="rgba(191,155,48,0.3)" />
+                <path d="M10 14C10 14 8 20 4 24" stroke="rgba(191,155,48,0.2)" strokeWidth="0.5" fill="none" strokeLinecap="round" />
+                <path d="M12 14C12 14 16 18 14 24" stroke="rgba(191,155,48,0.15)" strokeWidth="0.4" fill="none" strokeLinecap="round" />
+              </svg>
+              {/* Corner flowers — bottom left */}
+              <svg className="pointer-events-none absolute bottom-2 left-2 tablet:bottom-4 tablet:left-4" width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ transform: 'scaleY(-1)' }}>
+                <path d="M8 24C8 24 10 16 6 10C6 10 14 12 18 6C18 6 16 14 22 18" stroke="rgba(191,155,48,0.3)" strokeWidth="0.7" fill="none" strokeLinecap="round" />
+                <path d="M6 10C6 10 12 14 18 6" stroke="rgba(191,155,48,0.15)" strokeWidth="0.5" fill="none" />
+                <ellipse cx="12" cy="8" rx="3" ry="5" transform="rotate(-30 12 8)" fill="rgba(191,155,48,0.08)" stroke="rgba(191,155,48,0.2)" strokeWidth="0.5" />
+                <ellipse cx="7" cy="14" rx="3" ry="5" transform="rotate(20 7 14)" fill="rgba(191,155,48,0.08)" stroke="rgba(191,155,48,0.2)" strokeWidth="0.5" />
+                <ellipse cx="14" cy="14" rx="2.5" ry="4" transform="rotate(-60 14 14)" fill="rgba(191,155,48,0.06)" stroke="rgba(191,155,48,0.18)" strokeWidth="0.5" />
+                <circle cx="10" cy="12" r="1.8" fill="rgba(191,155,48,0.15)" />
+                <circle cx="10" cy="12" r="0.8" fill="rgba(191,155,48,0.3)" />
+                <path d="M10 14C10 14 8 20 4 24" stroke="rgba(191,155,48,0.2)" strokeWidth="0.5" fill="none" strokeLinecap="round" />
+                <path d="M12 14C12 14 16 18 14 24" stroke="rgba(191,155,48,0.15)" strokeWidth="0.4" fill="none" strokeLinecap="round" />
+              </svg>
+              {/* Corner flowers — bottom right */}
+              <svg className="pointer-events-none absolute bottom-2 right-2 tablet:bottom-4 tablet:right-4" width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ transform: 'scale(-1, -1)' }}>
+                <path d="M8 24C8 24 10 16 6 10C6 10 14 12 18 6C18 6 16 14 22 18" stroke="rgba(191,155,48,0.3)" strokeWidth="0.7" fill="none" strokeLinecap="round" />
+                <path d="M6 10C6 10 12 14 18 6" stroke="rgba(191,155,48,0.15)" strokeWidth="0.5" fill="none" />
+                <ellipse cx="12" cy="8" rx="3" ry="5" transform="rotate(-30 12 8)" fill="rgba(191,155,48,0.08)" stroke="rgba(191,155,48,0.2)" strokeWidth="0.5" />
+                <ellipse cx="7" cy="14" rx="3" ry="5" transform="rotate(20 7 14)" fill="rgba(191,155,48,0.08)" stroke="rgba(191,155,48,0.2)" strokeWidth="0.5" />
+                <ellipse cx="14" cy="14" rx="2.5" ry="4" transform="rotate(-60 14 14)" fill="rgba(191,155,48,0.06)" stroke="rgba(191,155,48,0.18)" strokeWidth="0.5" />
+                <circle cx="10" cy="12" r="1.8" fill="rgba(191,155,48,0.15)" />
+                <circle cx="10" cy="12" r="0.8" fill="rgba(191,155,48,0.3)" />
+                <path d="M10 14C10 14 8 20 4 24" stroke="rgba(191,155,48,0.2)" strokeWidth="0.5" fill="none" strokeLinecap="round" />
+                <path d="M12 14C12 14 16 18 14 24" stroke="rgba(191,155,48,0.15)" strokeWidth="0.4" fill="none" strokeLinecap="round" />
+              </svg>
+
+              {/* Gold accent strip at top */}
+              <div className="absolute inset-x-0 top-0">
+                <div className="h-[2px] w-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(191,155,48,0.3) 20%, rgba(191,155,48,0.5) 50%, rgba(191,155,48,0.3) 80%, transparent)' }} />
+              </div>
+
               {/* Letterhead */}
-              <div className="mb-8 text-center">
+              <div className="relative mb-8 text-center">
                 <p
                   className="text-xs tracking-[0.05em] text-navy/80 tablet:text-base tablet:tracking-[0.08em]"
                   style={{ fontFamily: "'Cormorant SC', serif", fontWeight: 600, fontSize: 'clamp(11px, 2.5vw, 17px)' }}
@@ -1361,7 +1462,13 @@ function Home() {
                 <p className="mt-0.5 text-[8px] tracking-[0.05em] text-navy/35 tablet:text-[10px] tablet:tracking-[0.08em]">
                   47 East South Temple Street, Salt Lake City, Utah 84150-1200
                 </p>
-                <div className="mx-auto mt-3 h-px w-full bg-navy/10" />
+
+                {/* Simple divider */}
+                <div className="mx-auto mt-4 flex items-center justify-center gap-3">
+                  <div className="h-px w-16" style={{ background: 'linear-gradient(90deg, transparent, rgba(191,155,48,0.25))' }} />
+                  <div className="h-1 w-1 rounded-full" style={{ background: 'rgba(191,155,48,0.25)' }} />
+                  <div className="h-px w-16" style={{ background: 'linear-gradient(270deg, transparent, rgba(191,155,48,0.25))' }} />
+                </div>
               </div>
 
               {/* Letter body — render pdfText grouped into paragraphs */}
@@ -1370,12 +1477,16 @@ function Home() {
                 style={{ fontFamily: "'Cormorant Garamond', 'Georgia', serif", textAlign: 'justify' }}
               >
                 {(() => {
-                  // Use hardcoded template with dynamic field substitution
-                  const text = CALL_LETTER_TEMPLATE
-                    .replace(/\{\{MISSIONARY_NAME\}\}/g, data.missionaryName || '')
-                    .replace(/\{\{MISSION_NAME\}\}/g, data.missionName || '')
-                    .replace(/\{\{LANGUAGE\}\}/g, data.language || '')
-                    .replace(/\{\{ENTRY_DATE\}\}/g, data.entryDate || '');
+                  // Prefer normalizedPdfText from backend (has real address from PDF)
+                  // Fall back to template with dynamic field substitution
+                  const text = data.normalizedPdfText
+                    ? data.normalizedPdfText
+                    : CALL_LETTER_TEMPLATE
+                      .replace(/\{\{MISSIONARY_NAME\}\}/g, data.missionaryName || '')
+                      .replace(/\{\{ADDRESS\}\}/g, (data.missionaryAddress || '').replace(/\\n/g, '\n'))
+                      .replace(/\{\{MISSION_NAME\}\}/g, data.missionName || '')
+                      .replace(/\{\{LANGUAGE\}\}/g, data.language || '')
+                      .replace(/\{\{ENTRY_DATE\}\}/g, data.entryDate || '');
 
                   return text
                     .split(/\n\s*\n/)
@@ -1385,16 +1496,26 @@ function Home() {
                       // "Atentamente," — signature block with signed image
                       if (block.startsWith('Atentamente')) {
                         return (
-                          <div key={i} className="mt-8 text-center" style={{ textAlign: 'center' }}>
-                            <p>{block}</p>
+                          <div key={i} className="mt-10 text-center" style={{ textAlign: 'center' }}>
+                            {/* Parchment scroll flourish — signature */}
+                            <div className="mx-auto mb-6 flex items-center justify-center">
+                              <svg viewBox="0 0 160 16" fill="none" className="h-3 w-[130px] tablet:w-[180px]">
+                                <path d="M6 10C6 10 9 13 13 11C17 9 15 6 12 7C9 8 10 11 14 11C18 11 24 7 40 8Q60 9 75 10" stroke="rgba(191,155,48,0.25)" strokeWidth="0.7" fill="none" strokeLinecap="round" />
+                                <path d="M75 10Q78 5 80 5Q82 5 85 10" stroke="rgba(191,155,48,0.3)" strokeWidth="0.8" fill="none" strokeLinecap="round" />
+                                <circle cx="80" cy="4" r="1" fill="rgba(191,155,48,0.2)" />
+                                <path d="M85 10Q100 9 120 8C136 7 142 11 146 11C150 11 151 8 148 7C145 6 143 9 147 11C151 13 154 10 154 10" stroke="rgba(191,155,48,0.25)" strokeWidth="0.7" fill="none" strokeLinecap="round" />
+                              </svg>
+                            </div>
+                            <p className="italic">{block}</p>
                             {signatureUrl && (
                               <img
                                 src={signatureUrl}
                                 alt="Firma"
-                                className="mx-auto my-2 h-8 w-auto tablet:h-10"
+                                className="mx-auto my-3 h-10 w-auto tablet:h-12"
+                                style={{ filter: 'sepia(0.15)' }}
                               />
                             )}
-                            <p>Presidente</p>
+                            <p className="font-semibold">Presidente</p>
                           </div>
                         );
                       }
@@ -1465,7 +1586,13 @@ function Home() {
                       );
 
                       const revealedText = (text: string) => (
-                        <span className="inline-block font-bold" style={{ color: '#BF9B30' }}>
+                        <span
+                          className="inline-block font-bold"
+                          style={{
+                            color: '#BF9B30',
+                            textShadow: '0 0 12px rgba(191, 155, 48, 0.15)',
+                          }}
+                        >
                           {text}
                         </span>
                       );
@@ -1550,17 +1677,36 @@ function Home() {
 
               {/* Continuar button — appears after all fields revealed */}
               {allFieldsRevealed && (
-                <div className="mt-8 flex justify-center">
+                <div className="mt-10 flex flex-col items-center gap-4">
+                  {/* Parchment scroll flourish — bottom */}
+                  <div className="flex items-center justify-center">
+                    <svg viewBox="0 0 160 16" fill="none" className="h-3 w-[130px] tablet:w-[180px]">
+                      <path d="M6 10C6 10 9 13 13 11C17 9 15 6 12 7C9 8 10 11 14 11C18 11 24 7 40 8Q60 9 75 10" stroke="rgba(191,155,48,0.25)" strokeWidth="0.7" fill="none" strokeLinecap="round" />
+                      <path d="M75 10Q78 5 80 5Q82 5 85 10" stroke="rgba(191,155,48,0.3)" strokeWidth="0.8" fill="none" strokeLinecap="round" />
+                      <circle cx="80" cy="4" r="1" fill="rgba(191,155,48,0.2)" />
+                      <path d="M85 10Q100 9 120 8C136 7 142 11 146 11C150 11 151 8 148 7C145 6 143 9 147 11C151 13 154 10 154 10" stroke="rgba(191,155,48,0.25)" strokeWidth="0.7" fill="none" strokeLinecap="round" />
+                    </svg>
+                  </div>
                   <button
                     onClick={handleContinuar}
                     disabled={loadingDestination}
-                    className="rounded-full bg-gold px-8 py-3 text-sm font-semibold uppercase tracking-wider text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                    className="rounded-full px-10 py-3 text-sm font-semibold uppercase tracking-[0.15em] text-white transition-all hover:scale-[1.03] hover:opacity-90 disabled:opacity-50"
+                    style={{
+                      background: 'rgba(191, 155, 48, 0.85)',
+                      boxShadow: '0 4px 16px rgba(191, 155, 48, 0.25), inset 0 1px 0 rgba(255,255,255,0.2)',
+                    }}
                   >
                     {loadingDestination ? 'Cargando...' : 'Continuar'}
                   </button>
                 </div>
               )}
-            </div>
+
+              {/* Gold accent strip at bottom */}
+              <div className="absolute inset-x-0 bottom-0">
+                <div className="h-[2px] w-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(191,155,48,0.3) 20%, rgba(191,155,48,0.5) 50%, rgba(191,155,48,0.3) 80%, transparent)' }} />
+              </div>
+              </div>{/* close inner wrapper */}
+            </div>{/* close scrollable */}
             </LetterCover>
           </div>
         </div>
