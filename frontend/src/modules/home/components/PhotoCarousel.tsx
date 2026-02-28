@@ -34,9 +34,12 @@ function PhotoCarousel() {
   const [imageUrls, setImageUrls] = useState<(string | null)[]>(Array(shuffledKeys.length).fill(null));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [modalIndex, setModalIndex] = useState<number | null>(null);
+  const [modalFlip, setModalFlip] = useState<'none' | 'flip-left' | 'flip-right'>('none');
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fetchedRef = useRef<Set<number>>(new Set());
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchDeltaRef = useRef(0);
 
   // Custom hooks
   const fetchSignedUrl = useCallback(async (index: number) => {
@@ -79,7 +82,7 @@ function PhotoCarousel() {
 
   useEffect(() => {
     if (totalSlides <= 1) return;
-    if (selectedPhoto) {
+    if (modalIndex !== null) {
       if (autoPlayRef.current) clearInterval(autoPlayRef.current);
       return;
     }
@@ -87,7 +90,7 @@ function PhotoCarousel() {
     return () => {
       if (autoPlayRef.current) clearInterval(autoPlayRef.current);
     };
-  }, [totalSlides, resetAutoPlay, selectedPhoto]);
+  }, [totalSlides, resetAutoPlay, modalIndex]);
 
   // Event handlers
   const goTo = (index: number) => {
@@ -100,6 +103,40 @@ function PhotoCarousel() {
 
   const goPrev = () => goTo((currentIndex - 1 + totalSlides) % totalSlides);
   const goNext = () => goTo((currentIndex + 1) % totalSlides);
+
+  const modalGo = (direction: 'prev' | 'next') => {
+    if (modalIndex === null || modalFlip !== 'none') return;
+    const flipDir = direction === 'next' ? 'flip-left' : 'flip-right';
+    setModalFlip(flipDir);
+    setTimeout(() => {
+      setModalIndex(
+        direction === 'next'
+          ? (modalIndex + 1) % totalSlides
+          : (modalIndex - 1 + totalSlides) % totalSlides
+      );
+      setModalFlip('none');
+    }, 300);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchDeltaRef.current = 0;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    touchDeltaRef.current = e.touches[0].clientX - touchStartRef.current.x;
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartRef.current) return;
+    const delta = touchDeltaRef.current;
+    const threshold = 50;
+    if (delta < -threshold) modalGo('next');
+    else if (delta > threshold) modalGo('prev');
+    touchStartRef.current = null;
+    touchDeltaRef.current = 0;
+  };
 
   // Render helpers
   const getSlideStyle = (offset: number) => {
@@ -153,7 +190,7 @@ function PhotoCarousel() {
                 key={i}
                 className="absolute cursor-pointer"
                 style={getSlideStyle(wrappedOffset)}
-                onClick={() => wrappedOffset === 0 ? setSelectedPhoto(url) : goTo(i)}
+                onClick={() => wrappedOffset === 0 ? setModalIndex(i) : goTo(i)}
               >
                 <div
                   className="overflow-hidden rounded bg-white p-1.5 shadow-lg tablet:p-2"
@@ -213,14 +250,15 @@ function PhotoCarousel() {
     </div>
 
       {/* Modal — rendered via portal to escape parent stacking context */}
-      {selectedPhoto && createPortal(
+      {modalIndex !== null && validUrls[modalIndex] && createPortal(
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4"
-          onClick={() => setSelectedPhoto(null)}
+          onClick={() => setModalIndex(null)}
         >
+          {/* Close button */}
           <button
-            onClick={() => setSelectedPhoto(null)}
-            className="absolute right-4 top-4 z-[100] flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-navy/70 shadow-md transition-colors hover:bg-white hover:text-navy"
+            onClick={() => setModalIndex(null)}
+            className="absolute right-4 top-4 z-[110] flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-navy/70 shadow-md transition-colors hover:bg-white hover:text-navy"
             aria-label="Cerrar"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -228,16 +266,63 @@ function PhotoCarousel() {
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
-          <div
-            className="overflow-hidden rounded-lg bg-white p-2 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+
+          {/* Prev arrow */}
+          <button
+            onClick={(e) => { e.stopPropagation(); modalGo('prev'); }}
+            className="absolute left-3 z-[110] flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-navy/70 shadow-md transition-all hover:bg-white hover:text-gold tablet:left-6 tablet:h-12 tablet:w-12"
+            aria-label="Foto anterior"
           >
-            <img
-              src={selectedPhoto}
-              alt="Foto ampliada"
-              className="max-h-[55vh] max-w-[65vw] rounded object-contain"
-            />
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+
+          {/* Photo with page-flip animation */}
+          <div
+            className="relative"
+            style={{ perspective: '1200px' }}
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div
+              className="overflow-hidden rounded-lg bg-white p-2 shadow-2xl"
+              style={{
+                transition: 'transform 0.3s ease-in-out',
+                transformStyle: 'preserve-3d',
+                transform:
+                  modalFlip === 'flip-left'
+                    ? 'rotateY(-15deg) scale(0.97)'
+                    : modalFlip === 'flip-right'
+                    ? 'rotateY(15deg) scale(0.97)'
+                    : 'rotateY(0deg) scale(1)',
+              }}
+            >
+              <img
+                src={validUrls[modalIndex]}
+                alt={`Foto ${modalIndex + 1} de ${totalSlides}`}
+                className="max-h-[65vh] max-w-[80vw] rounded object-contain tablet:max-h-[75vh] tablet:max-w-[65vw]"
+              />
+            </div>
+
+            {/* Counter */}
+            <div className="mt-3 text-center text-sm font-medium text-white/80">
+              {modalIndex + 1} / {totalSlides}
+            </div>
           </div>
+
+          {/* Next arrow */}
+          <button
+            onClick={(e) => { e.stopPropagation(); modalGo('next'); }}
+            className="absolute right-3 z-[110] flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-navy/70 shadow-md transition-all hover:bg-white hover:text-gold tablet:right-6 tablet:h-12 tablet:w-12"
+            aria-label="Foto siguiente"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
         </div>,
         document.body
       )}

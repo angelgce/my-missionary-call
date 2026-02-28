@@ -78,6 +78,7 @@ function WorldMap({
   const [lineCoords, setLineCoords] = useState<{ x1: number; y1: number; x2: number; y2: number }[]>([]);
   const [activePredictionId, setActivePredictionId] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Set initial pin from pre-filled data
   useEffect(() => {
@@ -269,8 +270,11 @@ function WorldMap({
         style={{ width: '100%', height: 420 }}
         mapStyle={MAP_STYLE}
         attributionControl={false}
-        cursor="crosshair"
+        renderWorldCopies={false}
+        cursor={isDragging ? 'grabbing' : 'crosshair'}
         onClick={handleClick}
+        onDragStart={() => setIsDragging(true)}
+        onDragEnd={() => setIsDragging(false)}
         onRender={updateLineCoords}
         onLoad={() => setMapReady(true)}
       >

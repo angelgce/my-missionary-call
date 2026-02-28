@@ -77,6 +77,8 @@ function AdminDashboardPage() {
   const [savingEventSettings, setSavingEventSettings] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; type: 'prediction' | 'advice' } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [predictionsPage, setPredictionsPage] = useState(1);
+  const [advicesPage, setAdvicesPage] = useState(1);
 
   // Redux selectors
   const { isAuthenticated } = useSelector((state: RootState) => state.admin);
@@ -134,6 +136,22 @@ function AdminDashboardPage() {
 
   // Computed values
   const canReveal = !openingDate || revealCountdown?.expired === true;
+
+  const PAGE_SIZE = 5;
+
+  const sortedPredictions = useMemo(
+    () => [...predictions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [predictions],
+  );
+  const predictionsTotalPages = Math.max(1, Math.ceil(sortedPredictions.length / PAGE_SIZE));
+  const paginatedPredictions = sortedPredictions.slice((predictionsPage - 1) * PAGE_SIZE, predictionsPage * PAGE_SIZE);
+
+  const sortedAdvices = useMemo(
+    () => [...advices].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [advices],
+  );
+  const advicesTotalPages = Math.max(1, Math.ceil(sortedAdvices.length / PAGE_SIZE));
+  const paginatedAdvices = sortedAdvices.slice((advicesPage - 1) * PAGE_SIZE, advicesPage * PAGE_SIZE);
 
   // Event handlers
   const fetchData = async () => {
@@ -358,10 +376,20 @@ function AdminDashboardPage() {
     try {
       if (deleteConfirm.type === 'prediction') {
         await api.delete(`/predictions/${deleteConfirm.id}`);
-        setPredictions((prev) => prev.filter((p) => p.id !== deleteConfirm.id));
+        setPredictions((prev) => {
+          const next = prev.filter((p) => p.id !== deleteConfirm.id);
+          const maxPage = Math.max(1, Math.ceil(next.length / PAGE_SIZE));
+          if (predictionsPage > maxPage) setPredictionsPage(maxPage);
+          return next;
+        });
       } else {
         await api.delete(`/advice/${deleteConfirm.id}`);
-        setAdvices((prev) => prev.filter((a) => a.id !== deleteConfirm.id));
+        setAdvices((prev) => {
+          const next = prev.filter((a) => a.id !== deleteConfirm.id);
+          const maxPage = Math.max(1, Math.ceil(next.length / PAGE_SIZE));
+          if (advicesPage > maxPage) setAdvicesPage(maxPage);
+          return next;
+        });
       }
     } catch {
       setMessage(deleteConfirm.type === 'prediction' ? 'Error al eliminar predicción' : 'Error al eliminar consejo');
@@ -763,53 +791,104 @@ function AdminDashboardPage() {
           {predictions.length === 0 ? (
             <p className="text-center text-slate/60">No hay predicciones aún</p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-rose-soft">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-cream text-xs uppercase text-slate">
-                  <tr>
-                    <th className="px-4 py-3">Nombre</th>
-                    <th className="px-4 py-3">País</th>
-                    <th className="px-4 py-3">Estado</th>
-                    <th className="px-4 py-3 hidden tablet:table-cell">IP</th>
-                    <th className="px-4 py-3">Fecha</th>
-                    <th className="px-4 py-3 text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-rose-soft bg-warm-white">
-                  {predictions.map((p) => (
-                    <tr key={p.id}>
-                      <td className="px-4 py-3 font-medium text-navy">
-                        {showPredictions ? p.guestName : censor(p.guestName)}
-                      </td>
-                      <td className="px-4 py-3 text-slate">
-                        {showPredictions ? p.country : censor(p.country)}
-                      </td>
-                      <td className="px-4 py-3 text-slate">
-                        {showPredictions ? p.state : censor(p.state)}
-                      </td>
-                      <td className="px-4 py-3 text-slate/60 hidden tablet:table-cell">
-                        {showPredictions ? p.ipAddress : censor(p.ipAddress)}
-                      </td>
-                      <td className="px-4 py-3 text-slate/60">
-                        {new Date(p.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => setDeleteConfirm({ id: p.id, type: 'prediction' })}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate/40 transition-colors hover:bg-rose-soft hover:text-gold-dark"
-                          aria-label="Eliminar predicción"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                          </svg>
-                        </button>
-                      </td>
+            <>
+              <div className="overflow-x-auto rounded-xl border border-rose-soft">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-cream text-xs uppercase text-slate">
+                    <tr>
+                      <th className="px-4 py-3">Nombre</th>
+                      <th className="px-4 py-3">País</th>
+                      <th className="px-4 py-3">Estado</th>
+                      <th className="px-4 py-3 hidden tablet:table-cell">IP</th>
+                      <th className="px-4 py-3">Fecha</th>
+                      <th className="px-4 py-3 text-right">Acciones</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-rose-soft bg-warm-white">
+                    {paginatedPredictions.map((p) => (
+                      <tr key={p.id}>
+                        <td className="px-4 py-3 font-medium text-navy">
+                          {showPredictions ? p.guestName : censor(p.guestName)}
+                        </td>
+                        <td className="px-4 py-3 text-slate">
+                          {showPredictions ? p.country : censor(p.country)}
+                        </td>
+                        <td className="px-4 py-3 text-slate">
+                          {showPredictions ? p.state : censor(p.state)}
+                        </td>
+                        <td className="px-4 py-3 text-slate/60 hidden tablet:table-cell">
+                          {showPredictions ? p.ipAddress : censor(p.ipAddress)}
+                        </td>
+                        <td className="px-4 py-3 text-slate/60">
+                          {new Date(p.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => setDeleteConfirm({ id: p.id, type: 'prediction' })}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate/40 transition-colors hover:bg-rose-soft hover:text-gold-dark"
+                            aria-label="Eliminar predicción"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {predictions.length > 0 && (
+                <div className="mt-4 flex items-center justify-center gap-1">
+                  <button
+                    onClick={() => setPredictionsPage(1)}
+                    disabled={predictionsPage === 1}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate transition-colors hover:bg-cream disabled:opacity-25"
+                    aria-label="Primera página"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="11 17 6 12 11 7" />
+                      <polyline points="18 17 13 12 18 7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setPredictionsPage((p) => Math.max(1, p - 1))}
+                    disabled={predictionsPage === 1}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate transition-colors hover:bg-cream disabled:opacity-25"
+                    aria-label="Página anterior"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                  </button>
+                  <span className="mx-2 rounded-lg bg-cream px-3 py-1 text-xs font-medium text-navy">
+                    {predictionsPage} de {predictionsTotalPages}
+                  </span>
+                  <button
+                    onClick={() => setPredictionsPage((p) => Math.min(predictionsTotalPages, p + 1))}
+                    disabled={predictionsPage === predictionsTotalPages}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate transition-colors hover:bg-cream disabled:opacity-25"
+                    aria-label="Página siguiente"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setPredictionsPage(predictionsTotalPages)}
+                    disabled={predictionsPage === predictionsTotalPages}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate transition-colors hover:bg-cream disabled:opacity-25"
+                    aria-label="Última página"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="13 17 18 12 13 7" />
+                      <polyline points="6 17 11 12 6 7" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -845,51 +924,102 @@ function AdminDashboardPage() {
           {advices.length === 0 ? (
             <p className="text-center text-slate/60">No hay consejos aún</p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-rose-soft">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-cream text-xs uppercase text-slate">
-                  <tr>
-                    <th className="px-4 py-3">Nombre</th>
-                    <th className="px-4 py-3">Consejo</th>
-                    <th className="px-4 py-3 hidden tablet:table-cell">IP</th>
-                    <th className="px-4 py-3">Fecha</th>
-                    <th className="px-4 py-3 text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-rose-soft bg-warm-white">
-                  {advices.map((a) => (
-                    <tr key={a.id}>
-                      <td className="px-4 py-3 font-medium text-navy">
-                        {showAdvices ? a.guestName : censor(a.guestName)}
-                      </td>
-                      <td className="px-4 py-3 text-slate">
-                        {showAdvices ? (
-                          <span className="whitespace-pre-wrap">{a.advice}</span>
-                        ) : censor(a.advice)}
-                      </td>
-                      <td className="px-4 py-3 text-slate/60 hidden tablet:table-cell">
-                        {showAdvices ? a.ipAddress : censor(a.ipAddress)}
-                      </td>
-                      <td className="px-4 py-3 text-slate/60">
-                        {new Date(a.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => setDeleteConfirm({ id: a.id, type: 'advice' })}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate/40 transition-colors hover:bg-rose-soft hover:text-gold-dark"
-                          aria-label="Eliminar consejo"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                          </svg>
-                        </button>
-                      </td>
+            <>
+              <div className="overflow-x-auto rounded-xl border border-rose-soft">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-cream text-xs uppercase text-slate">
+                    <tr>
+                      <th className="px-4 py-3">Nombre</th>
+                      <th className="px-4 py-3">Consejo</th>
+                      <th className="px-4 py-3 hidden tablet:table-cell">IP</th>
+                      <th className="px-4 py-3">Fecha</th>
+                      <th className="px-4 py-3 text-right">Acciones</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-rose-soft bg-warm-white">
+                    {paginatedAdvices.map((a) => (
+                      <tr key={a.id}>
+                        <td className="px-4 py-3 font-medium text-navy">
+                          {showAdvices ? a.guestName : censor(a.guestName)}
+                        </td>
+                        <td className="px-4 py-3 text-slate">
+                          {showAdvices ? (
+                            <span className="whitespace-pre-wrap">{a.advice}</span>
+                          ) : censor(a.advice)}
+                        </td>
+                        <td className="px-4 py-3 text-slate/60 hidden tablet:table-cell">
+                          {showAdvices ? a.ipAddress : censor(a.ipAddress)}
+                        </td>
+                        <td className="px-4 py-3 text-slate/60">
+                          {new Date(a.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => setDeleteConfirm({ id: a.id, type: 'advice' })}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate/40 transition-colors hover:bg-rose-soft hover:text-gold-dark"
+                            aria-label="Eliminar consejo"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {advices.length > 0 && (
+                <div className="mt-4 flex items-center justify-center gap-1">
+                  <button
+                    onClick={() => setAdvicesPage(1)}
+                    disabled={advicesPage === 1}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate transition-colors hover:bg-cream disabled:opacity-25"
+                    aria-label="Primera página"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="11 17 6 12 11 7" />
+                      <polyline points="18 17 13 12 18 7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setAdvicesPage((p) => Math.max(1, p - 1))}
+                    disabled={advicesPage === 1}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate transition-colors hover:bg-cream disabled:opacity-25"
+                    aria-label="Página anterior"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                  </button>
+                  <span className="mx-2 rounded-lg bg-cream px-3 py-1 text-xs font-medium text-navy">
+                    {advicesPage} de {advicesTotalPages}
+                  </span>
+                  <button
+                    onClick={() => setAdvicesPage((p) => Math.min(advicesTotalPages, p + 1))}
+                    disabled={advicesPage === advicesTotalPages}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate transition-colors hover:bg-cream disabled:opacity-25"
+                    aria-label="Página siguiente"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setAdvicesPage(advicesTotalPages)}
+                    disabled={advicesPage === advicesTotalPages}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate transition-colors hover:bg-cream disabled:opacity-25"
+                    aria-label="Última página"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="13 17 18 12 13 7" />
+                      <polyline points="6 17 11 12 6 7" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
