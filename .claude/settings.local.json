@@ -10,7 +10,9 @@
       "Bash(curl *)",
       "Bash(mkdir *)",
       "Bash(ls *)",
-      "Bash(ps:*)"
+      "Bash(ps:*)",
+      "Bash(node:*)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }

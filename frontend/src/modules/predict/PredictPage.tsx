@@ -226,7 +226,7 @@ function PredictPage() {
               }
             />
             </Suspense>
-            <p className="mt-2 text-center text-xs text-slate/60">
+            <p className="mt-2 text-center text-base font-semibold text-slate/60">
               {selectedCountryCode
                 ? 'Haz clic en el mapa para colocar tu pin'
                 : 'Selecciona un país o haz clic en el mapa'}

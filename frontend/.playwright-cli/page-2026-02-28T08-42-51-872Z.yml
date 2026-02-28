@@ -1,0 +1,484 @@
+- generic [ref=e4]:
+  - generic:
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+  - generic [ref=e5]:
+    - paragraph [ref=e6]: La Iglesia de Jesucristo de los Santos de los Últimos Días
+    - img [ref=e9]
+    - heading "Llamada a Servir" [level=1] [ref=e12]
+    - paragraph [ref=e13]: Hermana Nombre Apellido
+    - img [ref=e16]
+    - generic [ref=e19]:
+      - generic [ref=e21]:
+        - img [ref=e23]
+        - generic [ref=e27]:
+          - paragraph [ref=e31]: Hermana Nombre Apellido
+          - paragraph [ref=e33]: Llamada a Servir
+      - generic [ref=e34]:
+        - generic [ref=e78]:
+          - paragraph [ref=e79]: Fecha de apertura
+          - generic [ref=e80]:
+            - generic [ref=e81]:
+              - generic [ref=e82]:
+                - generic [ref=e84]: "00"
+                - generic [ref=e85]: Días
+              - generic [ref=e86]: ":"
+            - generic [ref=e87]:
+              - generic [ref=e88]:
+                - generic [ref=e90]: "15"
+                - generic [ref=e91]: Hrs
+              - generic [ref=e92]: ":"
+            - generic [ref=e93]:
+              - generic [ref=e94]:
+                - generic [ref=e96]: "47"
+                - generic [ref=e97]: Min
+              - generic [ref=e98]: ":"
+            - generic [ref=e100]:
+              - generic [ref=e640]: "08"
+              - generic [ref=e102]: Seg
+          - paragraph [ref=e103]: sábado, 28 de febrero, 06:30 p.m.
+        - paragraph [ref=e104]:
+          - text: "Lugar:"
+          - link "Prol. Av. México, Real del Sur, Centro, Tabasco." [ref=e105] [cursor=pointer]:
+            - /url: https://maps.app.goo.gl/e8H3AT22jaNs8KVt5?g_st=ic
+    - img [ref=e38]
+  - generic [ref=e106]:
+    - generic [ref=e107]:
+      - button "Anterior" [ref=e108] [cursor=pointer]:
+        - img [ref=e109]
+      - generic [ref=e111]:
+        - img "Foto 6" [ref=e636] [cursor=pointer]
+        - img "Foto 7" [ref=e639] [cursor=pointer]
+        - img "Foto 8" [ref=e643] [cursor=pointer]
+        - img "Foto 9" [ref=e646] [cursor=pointer]
+        - img "Foto 10" [ref=e649] [cursor=pointer]
+      - button "Siguiente" [ref=e127] [cursor=pointer]:
+        - img [ref=e128]
+    - generic [ref=e130]:
+      - button "Ir a foto 1" [ref=e131] [cursor=pointer]
+      - button "Ir a foto 2" [ref=e132] [cursor=pointer]
+      - button "Ir a foto 3" [ref=e133] [cursor=pointer]
+      - button "Ir a foto 4" [ref=e134] [cursor=pointer]
+      - button "Ir a foto 5" [ref=e135] [cursor=pointer]
+      - button "Ir a foto 6" [ref=e136] [cursor=pointer]
+      - button "Ir a foto 7" [ref=e137] [cursor=pointer]
+      - button "Ir a foto 8" [ref=e138] [cursor=pointer]
+      - button "Ir a foto 9" [ref=e139] [cursor=pointer]
+      - button "Ir a foto 10" [ref=e140] [cursor=pointer]
+      - button "Ir a foto 11" [ref=e141] [cursor=pointer]
+  - generic [ref=e41]:
+    - generic [ref=e42]:
+      - button "Mi Predicción" [ref=e43] [cursor=pointer]
+      - button "Dejar un Consejo" [ref=e44] [cursor=pointer]
+    - generic [ref=e45]:
+      - generic [ref=e46]: Compartir
+      - generic [ref=e47]:
+        - link "Compartir en Facebook" [ref=e48] [cursor=pointer]:
+          - /url: https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Faletaraz.com
+          - img [ref=e49]
+        - link "Compartir en X" [ref=e51] [cursor=pointer]:
+          - /url: https://twitter.com/intent/tweet?url=https%3A%2F%2Faletaraz.com&text=%C2%A1Adivina%20a%20d%C3%B3nde%20ir%C3%A1%20de%20misi%C3%B3n!%20Registra%20tu%20predicci%C3%B3n%3A
+          - img [ref=e52]
+        - link "Compartir en WhatsApp" [ref=e54] [cursor=pointer]:
+          - /url: https://wa.me/?text=%C2%A1Adivina%20a%20d%C3%B3nde%20ir%C3%A1%20de%20misi%C3%B3n!%20Registra%20tu%20predicci%C3%B3n%3A%20https%3A%2F%2Faletaraz.com
+          - img [ref=e55]
+        - button "Código QR" [ref=e57] [cursor=pointer]:
+          - img [ref=e58]
+        - button "Copiar enlace" [ref=e60] [cursor=pointer]:
+          - img [ref=e61]
+  - generic [ref=e64]:
+    - paragraph [ref=e142]: 18 predicciones
+    - generic [ref=e144]:
+      - generic [ref=e146]:
+        - img [ref=e148]
+        - generic [ref=e150]:
+          - paragraph [ref=e151]: BenjamíN De Hoyos
+          - paragraph [ref=e152]: Madrid, Madrid
+          - paragraph [ref=e153]: Spain
+          - paragraph [ref=e154]: 27 feb
+      - generic [ref=e156]:
+        - img [ref=e158]
+        - generic [ref=e160]:
+          - paragraph [ref=e161]: Julian Balcazar
+          - paragraph [ref=e162]: San Pedro, Jalisco
+          - paragraph [ref=e163]: Mexico
+          - paragraph [ref=e164]: 27 feb
+      - generic [ref=e166]:
+        - img [ref=e168]
+        - generic [ref=e170]:
+          - paragraph [ref=e171]: éLder Armstrong
+          - paragraph [ref=e172]: Tetelco, Ciudad de México
+          - paragraph [ref=e173]: Mexico
+          - paragraph [ref=e174]: 27 feb
+      - generic [ref=e176]:
+        - img [ref=e178]
+        - generic [ref=e180]:
+          - paragraph [ref=e181]: Luis Miguel
+          - paragraph [ref=e182]: Veracruz, Veracruz de Ignacio de la Llave
+          - paragraph [ref=e183]: Mexico
+          - paragraph [ref=e184]: 27 feb
+      - generic [ref=e186]:
+        - img [ref=e188]
+        - generic [ref=e190]:
+          - paragraph [ref=e191]: Yenny Gonzalez
+          - paragraph [ref=e192]: Normal, Illinois
+          - paragraph [ref=e193]: United States
+          - paragraph [ref=e194]: 27 feb
+      - generic [ref=e196]:
+        - img [ref=e198]
+        - generic [ref=e200]:
+          - paragraph [ref=e201]: Lluvia Manty
+          - paragraph [ref=e202]: Guatemala City, Guatemala Department
+          - paragraph [ref=e203]: Guatemala
+          - paragraph [ref=e204]: 27 feb
+      - generic [ref=e206]:
+        - img [ref=e208]
+        - generic [ref=e210]:
+          - paragraph [ref=e211]: Lalo M
+          - paragraph [ref=e212]: Combee Settlement, Florida
+          - paragraph [ref=e213]: United States
+          - paragraph [ref=e214]: 27 feb
+      - generic [ref=e216]:
+        - img [ref=e218]
+        - generic [ref=e220]:
+          - paragraph [ref=e221]: Gusteban
+          - paragraph [ref=e222]: Ensenada, Baja California
+          - paragraph [ref=e223]: Mexico
+          - paragraph [ref=e224]: 27 feb
+      - generic [ref=e226]:
+        - img [ref=e228]
+        - generic [ref=e230]:
+          - paragraph [ref=e231]: Farid
+          - paragraph [ref=e232]: Phoenix, Arizona
+          - paragraph [ref=e233]: United States
+          - paragraph [ref=e234]: 27 feb
+      - generic [ref=e236]:
+        - img [ref=e238]
+        - generic [ref=e240]:
+          - paragraph [ref=e241]: Farid
+          - paragraph [ref=e242]: Gustavo A. Madero, Ciudad de México
+          - paragraph [ref=e243]: Mexico
+          - paragraph [ref=e244]: 27 feb
+      - generic [ref=e246]:
+        - img [ref=e248]
+        - generic [ref=e250]:
+          - paragraph [ref=e251]: Brissa CháVez Sosa
+          - paragraph [ref=e252]: Cadereyta, Nuevo León
+          - paragraph [ref=e253]: Mexico
+          - paragraph [ref=e254]: 27 feb
+      - generic [ref=e256]:
+        - img [ref=e258]
+        - generic [ref=e260]:
+          - paragraph [ref=e261]: Morian Hernandez
+          - paragraph [ref=e262]: Aguascalientes, Aguascalientes
+          - paragraph [ref=e263]: Mexico
+          - paragraph [ref=e264]: 27 feb
+      - generic [ref=e266]:
+        - img [ref=e268]
+        - generic [ref=e270]:
+          - paragraph [ref=e271]: Celeste
+          - paragraph [ref=e272]: Torreón, Coahuila de Zaragoza
+          - paragraph [ref=e273]: Mexico
+          - paragraph [ref=e274]: 27 feb
+      - generic [ref=e276]:
+        - img [ref=e278]
+        - generic [ref=e280]:
+          - paragraph [ref=e281]: Ivan Bautista
+          - paragraph [ref=e282]: Puli, Nantou
+          - paragraph [ref=e283]: Taiwan
+          - paragraph [ref=e284]: 27 feb
+      - generic [ref=e286]:
+        - img [ref=e288]
+        - generic [ref=e290]:
+          - paragraph [ref=e291]: Olga Lidia
+          - paragraph [ref=e292]: Monterrey, Nuevo León
+          - paragraph [ref=e293]: Mexico
+          - paragraph [ref=e294]: 27 feb
+      - generic [ref=e296]:
+        - img [ref=e298]
+        - generic [ref=e300]:
+          - paragraph [ref=e301]: Lidia Chavez Elizondo
+          - paragraph [ref=e302]: Guatemala City, Guatemala Department
+          - paragraph [ref=e303]: Guatemala
+          - paragraph [ref=e304]: 27 feb
+      - generic [ref=e306]:
+        - img [ref=e308]
+        - generic [ref=e310]:
+          - paragraph [ref=e311]: Alexhandra
+          - paragraph [ref=e312]: Salt Lake City, Utah
+          - paragraph [ref=e313]: United States
+          - paragraph [ref=e314]: 27 feb
+      - generic [ref=e316]:
+        - img [ref=e318]
+        - generic [ref=e320]:
+          - paragraph [ref=e321]: Elder Loosle
+          - paragraph [ref=e322]: Callao, Callao
+          - paragraph [ref=e323]: Peru
+          - paragraph [ref=e324]: 27 feb
+      - generic [ref=e326]:
+        - img [ref=e328]
+        - generic [ref=e330]:
+          - paragraph [ref=e331]: BenjamíN De Hoyos
+          - paragraph [ref=e332]: Madrid, Madrid
+          - paragraph [ref=e333]: Spain
+          - paragraph [ref=e334]: 27 feb
+      - generic [ref=e336]:
+        - img [ref=e338]
+        - generic [ref=e340]:
+          - paragraph [ref=e341]: Julian Balcazar
+          - paragraph [ref=e342]: San Pedro, Jalisco
+          - paragraph [ref=e343]: Mexico
+          - paragraph [ref=e344]: 27 feb
+      - generic [ref=e346]:
+        - img [ref=e348]
+        - generic [ref=e350]:
+          - paragraph [ref=e351]: éLder Armstrong
+          - paragraph [ref=e352]: Tetelco, Ciudad de México
+          - paragraph [ref=e353]: Mexico
+          - paragraph [ref=e354]: 27 feb
+      - generic [ref=e356]:
+        - img [ref=e358]
+        - generic [ref=e360]:
+          - paragraph [ref=e361]: Luis Miguel
+          - paragraph [ref=e362]: Veracruz, Veracruz de Ignacio de la Llave
+          - paragraph [ref=e363]: Mexico
+          - paragraph [ref=e364]: 27 feb
+      - generic [ref=e366]:
+        - img [ref=e368]
+        - generic [ref=e370]:
+          - paragraph [ref=e371]: Yenny Gonzalez
+          - paragraph [ref=e372]: Normal, Illinois
+          - paragraph [ref=e373]: United States
+          - paragraph [ref=e374]: 27 feb
+      - generic [ref=e376]:
+        - img [ref=e378]
+        - generic [ref=e380]:
+          - paragraph [ref=e381]: Lluvia Manty
+          - paragraph [ref=e382]: Guatemala City, Guatemala Department
+          - paragraph [ref=e383]: Guatemala
+          - paragraph [ref=e384]: 27 feb
+      - generic [ref=e386]:
+        - img [ref=e388]
+        - generic [ref=e390]:
+          - paragraph [ref=e391]: Lalo M
+          - paragraph [ref=e392]: Combee Settlement, Florida
+          - paragraph [ref=e393]: United States
+          - paragraph [ref=e394]: 27 feb
+      - generic [ref=e396]:
+        - img [ref=e398]
+        - generic [ref=e400]:
+          - paragraph [ref=e401]: Gusteban
+          - paragraph [ref=e402]: Ensenada, Baja California
+          - paragraph [ref=e403]: Mexico
+          - paragraph [ref=e404]: 27 feb
+      - generic [ref=e406]:
+        - img [ref=e408]
+        - generic [ref=e410]:
+          - paragraph [ref=e411]: Farid
+          - paragraph [ref=e412]: Phoenix, Arizona
+          - paragraph [ref=e413]: United States
+          - paragraph [ref=e414]: 27 feb
+      - generic [ref=e416]:
+        - img [ref=e418]
+        - generic [ref=e420]:
+          - paragraph [ref=e421]: Farid
+          - paragraph [ref=e422]: Gustavo A. Madero, Ciudad de México
+          - paragraph [ref=e423]: Mexico
+          - paragraph [ref=e424]: 27 feb
+      - generic [ref=e426]:
+        - img [ref=e428]
+        - generic [ref=e430]:
+          - paragraph [ref=e431]: Brissa CháVez Sosa
+          - paragraph [ref=e432]: Cadereyta, Nuevo León
+          - paragraph [ref=e433]: Mexico
+          - paragraph [ref=e434]: 27 feb
+      - generic [ref=e436]:
+        - img [ref=e438]
+        - generic [ref=e440]:
+          - paragraph [ref=e441]: Morian Hernandez
+          - paragraph [ref=e442]: Aguascalientes, Aguascalientes
+          - paragraph [ref=e443]: Mexico
+          - paragraph [ref=e444]: 27 feb
+      - generic [ref=e446]:
+        - img [ref=e448]
+        - generic [ref=e450]:
+          - paragraph [ref=e451]: Celeste
+          - paragraph [ref=e452]: Torreón, Coahuila de Zaragoza
+          - paragraph [ref=e453]: Mexico
+          - paragraph [ref=e454]: 27 feb
+      - generic [ref=e456]:
+        - img [ref=e458]
+        - generic [ref=e460]:
+          - paragraph [ref=e461]: Ivan Bautista
+          - paragraph [ref=e462]: Puli, Nantou
+          - paragraph [ref=e463]: Taiwan
+          - paragraph [ref=e464]: 27 feb
+      - generic [ref=e466]:
+        - img [ref=e468]
+        - generic [ref=e470]:
+          - paragraph [ref=e471]: Olga Lidia
+          - paragraph [ref=e472]: Monterrey, Nuevo León
+          - paragraph [ref=e473]: Mexico
+          - paragraph [ref=e474]: 27 feb
+      - generic [ref=e476]:
+        - img [ref=e478]
+        - generic [ref=e480]:
+          - paragraph [ref=e481]: Lidia Chavez Elizondo
+          - paragraph [ref=e482]: Guatemala City, Guatemala Department
+          - paragraph [ref=e483]: Guatemala
+          - paragraph [ref=e484]: 27 feb
+      - generic [ref=e486]:
+        - img [ref=e488]
+        - generic [ref=e490]:
+          - paragraph [ref=e491]: Alexhandra
+          - paragraph [ref=e492]: Salt Lake City, Utah
+          - paragraph [ref=e493]: United States
+          - paragraph [ref=e494]: 27 feb
+      - generic [ref=e496]:
+        - img [ref=e498]
+        - generic [ref=e500]:
+          - paragraph [ref=e501]: Elder Loosle
+          - paragraph [ref=e502]: Callao, Callao
+          - paragraph [ref=e503]: Peru
+          - paragraph [ref=e504]: 27 feb
+    - generic [ref=e65]:
+      - generic [ref=e506]:
+        - generic:
+          - region "Map" [ref=e507]
+          - button "Map marker" [ref=e508] [cursor=pointer]:
+            - generic [ref=e509]:
+              - img [ref=e510]
+              - generic: "Benjamín De Hoyos : Madrid, Madrid"
+          - button "Map marker" [ref=e513] [cursor=pointer]:
+            - generic [ref=e514]:
+              - img [ref=e515]
+              - generic: "Julian Balcazar : San Pedro, Jalisco"
+          - button "Map marker" [ref=e518] [cursor=pointer]:
+            - generic [ref=e519]:
+              - img [ref=e520]
+              - generic: "Élder Armstrong: Tetelco, Ciudad de México"
+          - button "Map marker" [ref=e523] [cursor=pointer]:
+            - generic [ref=e524]:
+              - img [ref=e525]
+              - generic: "Luis miguel : Veracruz, Veracruz de Ignacio de la Llave"
+          - button "Map marker" [ref=e528] [cursor=pointer]:
+            - generic [ref=e529]:
+              - img [ref=e530]
+              - generic: "Yenny gonzalez: Normal, Illinois"
+          - button "Map marker" [ref=e533] [cursor=pointer]:
+            - generic [ref=e534]:
+              - img [ref=e535]
+              - generic: "lluvia manty : Guatemala City, Guatemala Department"
+          - button "Map marker" [ref=e538] [cursor=pointer]:
+            - generic [ref=e539]:
+              - img [ref=e540]
+              - generic: "Lalo M: Combee Settlement, Florida"
+          - button "Map marker" [ref=e543] [cursor=pointer]:
+            - generic [ref=e544]:
+              - img [ref=e545]
+              - generic: "Gusteban: Ensenada, Baja California"
+          - button "Map marker" [ref=e548] [cursor=pointer]:
+            - generic [ref=e549]:
+              - img [ref=e550]
+              - generic: "Farid: Phoenix, Arizona"
+          - button "Map marker" [ref=e553] [cursor=pointer]:
+            - generic [ref=e554]:
+              - img [ref=e555]
+              - generic: "Farid: Gustavo A. Madero, Ciudad de México"
+          - button "Map marker" [ref=e558] [cursor=pointer]:
+            - generic [ref=e559]:
+              - img [ref=e560]
+              - generic: "Brissa Chávez Sosa: Cadereyta, Nuevo León"
+          - button "Map marker" [ref=e563] [cursor=pointer]:
+            - generic [ref=e564]:
+              - img [ref=e565]
+              - generic: "Morian Hernandez : Aguascalientes, Aguascalientes"
+          - button "Map marker" [ref=e568] [cursor=pointer]:
+            - generic [ref=e569]:
+              - img [ref=e570]
+              - generic: "Celeste: Torreón, Coahuila de Zaragoza"
+          - button "Map marker" [ref=e573] [cursor=pointer]:
+            - generic [ref=e574]:
+              - img [ref=e575]
+              - generic: "Ivan Bautista : Puli, Nantou"
+          - button "Map marker" [ref=e578] [cursor=pointer]:
+            - generic [ref=e579]:
+              - img [ref=e580]
+              - generic: "Olga Lidia: Monterrey, Nuevo León"
+          - button "Map marker" [ref=e583] [cursor=pointer]:
+            - generic [ref=e584]:
+              - img [ref=e585]
+              - generic: "Lidia Chavez Elizondo : Guatemala City, Guatemala Department"
+          - button "Map marker" [ref=e588] [cursor=pointer]:
+            - generic [ref=e589]:
+              - img [ref=e590]
+              - generic: "Alexhandra: Salt Lake City, Utah"
+          - button "Map marker" [ref=e593] [cursor=pointer]:
+            - generic [ref=e594]:
+              - img [ref=e595]
+              - generic: "Elder Loosle: Callao, Callao"
+        - generic [ref=e598]:
+          - button "Zoom in" [ref=e599] [cursor=pointer]
+          - button "Zoom out" [ref=e601] [cursor=pointer]
+      - paragraph [ref=e66]: Haz clic en el mapa para registrar tu predicción
+    - generic [ref=e604]:
+      - paragraph [ref=e605]: 2 consejos
+      - generic [ref=e607]:
+        - generic [ref=e609]:
+          - img [ref=e611]
+          - generic [ref=e613]:
+            - paragraph [ref=e614]: Yenny Gonzalez
+            - paragraph [ref=e615]: dejó un consejo
+            - paragraph [ref=e616]: 27 feb
+        - generic [ref=e618]:
+          - img [ref=e620]
+          - generic [ref=e622]:
+            - paragraph [ref=e623]: Yenny GonzáLez Moreno
+            - paragraph [ref=e624]: dejó un consejo
+            - paragraph [ref=e625]: 27 feb
+    - generic [ref=e68]:
+      - paragraph [ref=e69]: Buzón de Consejos
+      - paragraph [ref=e70]: Solo la misionera podrá leer tu consejo
+      - generic [ref=e71]:
+        - generic [ref=e72]: Tu nombre
+        - textbox "Tu nombre" [ref=e73]:
+          - /placeholder: Escribe tu nombre...
+      - generic [ref=e74]:
+        - generic [ref=e75]: Tu consejo o mensaje
+        - textbox "Tu consejo o mensaje" [ref=e76]:
+          - /placeholder: Escribe tu consejo para la misionera...
+      - button "Enviar Consejo" [ref=e77] [cursor=pointer]
+  - generic [ref=e626]:
+    - paragraph [ref=e627]: Ubicación del evento
+    - iframe [ref=e629]:
+      

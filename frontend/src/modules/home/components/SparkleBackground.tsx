@@ -7,23 +7,24 @@ interface Sparkle {
   size: number;
   delay: number;
   duration: number;
-  type: 'dot' | 'star' | 'orb';
+  type: 'dot' | 'star' | 'orb' | 'diamond' | 'glitter' | 'falling';
 }
 
 function generateSparkles(count: number): Sparkle[] {
+  const types: Sparkle['type'][] = ['dot', 'star', 'orb', 'diamond', 'glitter', 'falling'];
   return Array.from({ length: count }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
     y: Math.random() * 100,
     size: Math.random() * 4 + 2,
-    delay: Math.random() * 8,
+    delay: Math.random() * 10,
     duration: Math.random() * 4 + 3,
-    type: (['dot', 'star', 'orb'] as const)[Math.floor(Math.random() * 3)],
+    type: types[Math.floor(Math.random() * types.length)],
   }));
 }
 
 function SparkleBackground() {
-  const [sparkles] = useState<Sparkle[]>(() => generateSparkles(35));
+  const [sparkles] = useState<Sparkle[]>(() => generateSparkles(55));
 
   const [mounted, setMounted] = useState(false);
 
@@ -67,6 +68,18 @@ function SparkleBackground() {
           left: '30%',
           background: 'rgba(240, 204, 215, 0.06)',
           animation: 'floatOrb 18s ease-in-out infinite 5s',
+        }}
+      />
+      {/* Gold glow orb */}
+      <div
+        className="absolute rounded-full"
+        style={{
+          width: 180,
+          height: 180,
+          top: '35%',
+          right: '15%',
+          background: 'rgba(191, 155, 48, 0.04)',
+          animation: 'floatOrb 22s ease-in-out infinite 3s',
         }}
       />
 
@@ -118,6 +131,45 @@ function SparkleBackground() {
                 background: 'rgba(248, 224, 232, 0.5)',
                 boxShadow: '0 0 8px rgba(212, 132, 155, 0.2)',
                 animation: `floatParticle ${sparkle.duration + 2}s ease-in-out infinite ${sparkle.delay}s`,
+              }}
+            />
+          )}
+          {sparkle.type === 'diamond' && (
+            <div
+              style={{
+                width: sparkle.size * 2,
+                height: sparkle.size * 2,
+                background: 'rgba(191, 155, 48, 0.35)',
+                transform: 'rotate(45deg)',
+                animation: `diamondSparkle ${sparkle.duration}s ease-in-out infinite ${sparkle.delay}s`,
+              }}
+            />
+          )}
+          {sparkle.type === 'glitter' && (
+            <svg
+              width={sparkle.size * 4}
+              height={sparkle.size * 4}
+              viewBox="0 0 24 24"
+              fill="none"
+              style={{
+                animation: `glitterBurst ${sparkle.duration * 0.8}s ease-in-out infinite ${sparkle.delay}s`,
+              }}
+            >
+              <path
+                d="M12 0L13.5 9L24 12L13.5 15L12 24L10.5 15L0 12L10.5 9Z"
+                fill="rgba(191, 155, 48, 0.3)"
+              />
+            </svg>
+          )}
+          {sparkle.type === 'falling' && (
+            <div
+              className="rounded-full"
+              style={{
+                width: sparkle.size * 0.8,
+                height: sparkle.size * 0.8,
+                background: 'rgba(191, 155, 48, 0.5)',
+                boxShadow: '0 0 4px rgba(191, 155, 48, 0.3)',
+                animation: `fallingSparkle ${sparkle.duration + 4}s linear infinite ${sparkle.delay}s`,
               }}
             />
           )}

@@ -197,6 +197,149 @@ body {
   }
 }
 
+/* Diamond sparkle */
+@keyframes diamondSparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: rotate(45deg) scale(0.3);
+  }
+  30% {
+    opacity: 1;
+    transform: rotate(45deg) scale(1);
+  }
+  60% {
+    opacity: 0.6;
+    transform: rotate(45deg) scale(0.7);
+  }
+  80% {
+    opacity: 0.9;
+    transform: rotate(45deg) scale(1.1);
+  }
+}
+
+/* Glitter burst — 4-point star */
+@keyframes glitterBurst {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.2) rotate(15deg);
+  }
+  40% {
+    opacity: 0.5;
+    transform: scale(0.6) rotate(-10deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1) rotate(5deg);
+  }
+  80% {
+    opacity: 0.3;
+    transform: scale(0.4) rotate(-5deg);
+  }
+}
+
+/* Falling sparkle */
+@keyframes fallingSparkle {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) translateX(0);
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateY(50vh) translateX(15px);
+  }
+  90% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100vh) translateX(-10px);
+  }
+}
+
+/* Title shimmer sweep */
+@keyframes titleShimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Gentle sparkle pulse for borders/outlines */
+@keyframes sparklePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(191, 155, 48, 0), 0 0 0 0 rgba(212, 132, 155, 0);
+  }
+  25% {
+    box-shadow: 0 0 8px 2px rgba(191, 155, 48, 0.15), 0 0 16px 4px rgba(212, 132, 155, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 12px 3px rgba(191, 155, 48, 0.08), 0 0 20px 6px rgba(212, 132, 155, 0.12);
+  }
+  75% {
+    box-shadow: 0 0 6px 1px rgba(191, 155, 48, 0.12), 0 0 14px 3px rgba(212, 132, 155, 0.06);
+  }
+}
+
+/* Text glow animation */
+@keyframes textGlow {
+  0%, 100% {
+    text-shadow: 0 0 0 transparent;
+  }
+  50% {
+    text-shadow: 0 0 8px rgba(191, 155, 48, 0.2), 0 0 16px rgba(191, 155, 48, 0.1);
+  }
+}
+
+/* Countdown animations */
+@keyframes countdownPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(212, 132, 155, 0), 0 2px 8px rgba(59, 33, 64, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 12px 2px rgba(212, 132, 155, 0.15), 0 2px 8px rgba(59, 33, 64, 0.08);
+  }
+}
+
+@keyframes countdownFlipIn {
+  0% {
+    transform: rotateX(90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: rotateX(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes countdownFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes countdownColon {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .cover-left-open {
   animation: coverOpenLeft 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   transform-origin: left center;

@@ -1,0 +1,97 @@
+- generic [ref=e4]:
+  - generic:
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+    - generic:
+      - img
+  - generic [ref=e5]:
+    - paragraph [ref=e6]: La Iglesia de Jesucristo de los Santos de los Últimos Días
+    - img [ref=e9]
+    - heading "Llamada a Servir" [level=1] [ref=e12]
+    - paragraph [ref=e13]: Hermana Nombre Apellido
+    - img [ref=e16]
+    - generic [ref=e19]:
+      - generic [ref=e22]:
+        - img [ref=e23]
+        - img [ref=e68]
+        - img [ref=e82]
+        - generic [ref=e85]:
+          - generic [ref=e90]: SUD
+          - paragraph [ref=e91]: Hermana Nombre Apellido
+          - paragraph [ref=e96]: Llamada a Servir
+      - paragraph [ref=e98]: El llamamiento será revelado durante el evento
+    - img [ref=e101]
+  - generic [ref=e104]:
+    - generic [ref=e105]:
+      - button "Mi Predicción" [ref=e106] [cursor=pointer]
+      - button "Dejar un Consejo" [ref=e107] [cursor=pointer]
+    - generic [ref=e108]:
+      - generic [ref=e109]: Compartir
+      - generic [ref=e110]:
+        - link "Compartir en Facebook" [ref=e111] [cursor=pointer]:
+          - /url: https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Faletaraz.com
+          - img [ref=e112]
+        - link "Compartir en X" [ref=e114] [cursor=pointer]:
+          - /url: https://twitter.com/intent/tweet?url=https%3A%2F%2Faletaraz.com&text=%C2%A1Adivina%20a%20d%C3%B3nde%20ir%C3%A1%20de%20misi%C3%B3n!%20Registra%20tu%20predicci%C3%B3n%3A
+          - img [ref=e115]
+        - link "Compartir en WhatsApp" [ref=e117] [cursor=pointer]:
+          - /url: https://wa.me/?text=%C2%A1Adivina%20a%20d%C3%B3nde%20ir%C3%A1%20de%20misi%C3%B3n!%20Registra%20tu%20predicci%C3%B3n%3A%20https%3A%2F%2Faletaraz.com
+          - img [ref=e118]
+        - button "Código QR" [ref=e120] [cursor=pointer]:
+          - img [ref=e121]
+        - button "Copiar enlace" [ref=e123] [cursor=pointer]:
+          - img [ref=e124]
+  - generic [ref=e127]:
+    - paragraph [ref=e129]: Haz clic en el mapa para registrar tu predicción
+    - generic [ref=e131]:
+      - paragraph [ref=e132]: Buzón de Consejos
+      - paragraph [ref=e133]: Solo la misionera podrá leer tu consejo
+      - generic [ref=e134]:
+        - generic [ref=e135]: Tu nombre
+        - textbox "Tu nombre" [ref=e136]:
+          - /placeholder: Escribe tu nombre...
+      - generic [ref=e137]:
+        - generic [ref=e138]: Tu consejo o mensaje
+        - textbox "Tu consejo o mensaje" [ref=e139]:
+          - /placeholder: Escribe tu consejo para la misionera...
+      - button "Enviar Consejo" [ref=e140] [cursor=pointer]

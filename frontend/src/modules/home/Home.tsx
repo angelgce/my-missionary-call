@@ -1,24 +1,28 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
 
 import confetti from 'canvas-confetti';
 import { QRCodeSVG } from 'qrcode.react';
 
 import api from '@/core/services/api';
 import { useAppDispatch, useAppSelector } from '@/core/hooks/useAppDispatch';
-import { fetchPredictions, Prediction } from '@/core/store/slices/predictionSlice';
+import { fetchPredictions, submitPrediction, Prediction } from '@/core/store/slices/predictionSlice';
+import { setAdviceGuestName, setAdviceText, submitAdvice } from '@/core/store/slices/adviceSlice';
+import { getSessionId } from '@/core/utils/session';
 
 import PageContainer from '@/shared/components/PageContainer';
 import DecorativeDivider from '@/shared/components/DecorativeDivider';
 import SparkleBackground from '@/modules/home/components/SparkleBackground';
+import ChristPhotoCascade from '@/modules/home/components/ChristPhotoCascade';
 import HintsChatModal from '@/modules/home/components/HintsChatModal';
 const WorldMap = lazy(() => import('@/modules/predict/components/WorldMap'));
 import LetterCover from '@/modules/revelation/components/LetterCover';
+import PhotoCarousel from '@/modules/home/components/PhotoCarousel';
 const ResultsView = lazy(() => import('@/modules/home/components/ResultsView'));
 
-const PredictPage = lazy(() => import('@/modules/predict/PredictPage'));
-const AdvicePage = lazy(() => import('@/modules/advice/AdvicePage'));
+import LocationSelector from '@/modules/predict/components/LocationSelector';
 
 import { useHintsChat } from '@/modules/home/hooks/useHintsChat';
+import { useCountryData } from '@/modules/predict/hooks/useCountryData';
 
 interface RevelationData {
   missionaryName: string;
@@ -65,26 +69,43 @@ function Home() {
   const [langRevealed, setLangRevealed] = useState(false);
   const [dateRevealed, setDateRevealed] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
-  const [shouldScroll, setShouldScroll] = useState(false);
-  const [showPredict, setShowPredict] = useState(false);
-  const [showAdvice, setShowAdvice] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [destination, setDestination] = useState<{ lat: number; lng: number; missionName: string } | null>(null);
   const [loadingDestination, setLoadingDestination] = useState(false);
-  const [adviceEntries, setAdviceEntries] = useState<{ id: string; guestName: string; createdAt: string }[]>([]);
+
   const [eventSettings, setEventSettings] = useState<{ openingDate: string; locationAddress: string; locationUrl: string } | null>(null);
-  const marqueeContainerRef = useRef<HTMLDivElement>(null);
-  const marqueeContentRef = useRef<HTMLDivElement>(null);
-  const predictRef = useRef<HTMLDivElement>(null);
-  const adviceRef = useRef<HTMLDivElement>(null);
+  const [quickPrediction, setQuickPrediction] = useState<{
+    country: string;
+    countryCode: string;
+    state: string;
+    stateCode: string;
+    city: string;
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [quickName, setQuickName] = useState('');
+  const [quickSubmitting, setQuickSubmitting] = useState(false);
+  const [quickNameError, setQuickNameError] = useState(false);
+  const [quickLocationErrors, setQuickLocationErrors] = useState({ country: false, state: false, city: false });
+  const [showMapHint, setShowMapHint] = useState(false);
+  const [adviceSubmitting, setAdviceSubmitting] = useState(false);
+  const [adviceSent, setAdviceSent] = useState(false);
+  const [adviceErrors, setAdviceErrors] = useState({ guestName: false, advice: false });
+  const [adviceRejection, setAdviceRejection] = useState<string | null>(null);
+  const [showAdviceHint, setShowAdviceHint] = useState(false);
+  const adviceSectionRef = useRef<HTMLDivElement>(null);
+  const mapSectionRef = useRef<HTMLDivElement>(null);
 
   // Redux selectors
   const dispatch = useAppDispatch();
   const predictions = useAppSelector((s) => s.prediction.predictions);
+  const adviceGuestName = useAppSelector((s) => s.advice.guestName);
+  const adviceText = useAppSelector((s) => s.advice.advice);
 
   // Custom hooks
   const { phase, messages, hintCount, isLoading, initChat, sendMessage, resetChat } = useHintsChat();
+  const { countries, getStates, getCities, findNearestLocation, findNearestCity, getCountryName, getStateName } = useCountryData();
 
   // Computed values
   const normalizeName = (name: string) =>
@@ -94,12 +115,52 @@ function Home() {
   const isRevealed = data?.isRevealed ?? false;
   const missionaryName = data?.missionaryName || 'Hermana Nombre Apellido';
   const allFieldsRevealed = missionRevealed && langRevealed && dateRevealed;
+  const quickStates = quickPrediction ? getStates(quickPrediction.countryCode) : [];
+  const quickCities = quickPrediction ? getCities(quickPrediction.countryCode, quickPrediction.stateCode) : [];
+
+  // Countdown — always relative to Villahermosa, Tabasco (America/Mexico_City, UTC-6, no DST)
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (!eventSettings?.openingDate || isRevealed) return;
+    const tick = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(tick);
+  }, [eventSettings?.openingDate, isRevealed]);
+
+  const { countdown, openingDateFormatted } = useMemo(() => {
+    if (!eventSettings?.openingDate) return { countdown: null, openingDateFormatted: '' };
+
+    // The stored date has no timezone (e.g. "2026-03-15T10:00").
+    // new Date() parses it as local browser time; adjust to Villahermosa (UTC-6).
+    const localDate = new Date(eventSettings.openingDate);
+    const VILLAHERMOSA_OFFSET_MIN = 360; // UTC-6 in positive minutes
+    const adjustment = (VILLAHERMOSA_OFFSET_MIN - localDate.getTimezoneOffset()) * 60_000;
+    const targetUtc = localDate.getTime() + adjustment;
+
+    const formatted = new Date(targetUtc).toLocaleDateString('es-MX', {
+      timeZone: 'America/Mexico_City',
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const diff = targetUtc - now;
+    if (diff <= 0)
+      return { countdown: { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true }, openingDateFormatted: formatted };
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+    const seconds = Math.floor((diff / 1000) % 60);
+    return { countdown: { days, hours, minutes, seconds, expired: false }, openingDateFormatted: formatted };
+  }, [eventSettings?.openingDate, now]);
 
   // Effects
   useEffect(() => {
     const fetchAll = () => {
       dispatch(fetchPredictions());
-      api.get('/advice/public').then((res) => setAdviceEntries(res.data)).catch(() => {});
     };
     fetchAll();
     const interval = setInterval(fetchAll, 10000);
@@ -144,27 +205,103 @@ function Home() {
     fetchSignature();
   }, [showModal]);
 
-  useEffect(() => {
-    const container = marqueeContainerRef.current;
-    const content = marqueeContentRef.current;
-    if (!container || !content) return;
-    setShouldScroll(content.scrollWidth > container.clientWidth);
-  }, [predictions, adviceEntries]);
-
-  useEffect(() => {
-    if (showPredict && predictRef.current) {
-      predictRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [showPredict]);
-
-  useEffect(() => {
-    if (showAdvice && adviceRef.current) {
-      adviceRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [showAdvice]);
-
-
   // Event handlers
+  const handleGlobalMapClick = useCallback((lng: number, lat: number) => {
+    const result = findNearestLocation(lng, lat);
+    if (!result) return;
+
+    const countryName = getCountryName(result.countryCode);
+    const stateName = result.stateCode ? getStateName(result.stateCode, result.countryCode) : '';
+    const cityName = result.stateCode ? findNearestCity(result.countryCode, result.stateCode, lng, lat) : '';
+
+    setQuickPrediction({
+      country: countryName,
+      countryCode: result.countryCode,
+      state: stateName,
+      stateCode: result.stateCode || '',
+      city: cityName || '',
+      lat,
+      lng,
+    });
+    setQuickName('');
+    setQuickNameError(false);
+    setQuickLocationErrors({ country: false, state: false, city: false });
+    setShowMapHint(false);
+  }, [findNearestLocation, findNearestCity, getCountryName, getStateName]);
+
+  const handleQuickSubmit = async () => {
+    if (!quickPrediction) return;
+    const nameErr = !quickName.trim();
+    const locErr = {
+      country: !quickPrediction.countryCode,
+      state: !quickPrediction.stateCode,
+      city: !quickPrediction.city,
+    };
+    setQuickNameError(nameErr);
+    setQuickLocationErrors(locErr);
+    if (nameErr || locErr.country || locErr.state || locErr.city) return;
+    setQuickSubmitting(true);
+    try {
+      await dispatch(
+        submitPrediction({
+          name: quickName.trim(),
+          country: quickPrediction.country,
+          countryCode: quickPrediction.countryCode,
+          state: quickPrediction.state,
+          stateCode: quickPrediction.stateCode,
+          city: quickPrediction.city,
+          sessionId: getSessionId(),
+          latitude: String(quickPrediction.lat),
+          longitude: String(quickPrediction.lng),
+        })
+      ).unwrap();
+      await dispatch(fetchPredictions()).unwrap();
+      setQuickPrediction(null);
+    } catch {
+      // silently fail
+    } finally {
+      setQuickSubmitting(false);
+    }
+  };
+
+  const handleScrollToMap = () => {
+    setShowMapHint(true);
+    mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const handleScrollToAdvice = () => {
+    setShowAdviceHint(true);
+    adviceSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const handleAdviceSubmit = async () => {
+    const newErrors = {
+      guestName: !adviceGuestName.trim(),
+      advice: !adviceText.trim(),
+    };
+    setAdviceErrors(newErrors);
+    if (newErrors.guestName || newErrors.advice || adviceSubmitting) return;
+
+    setAdviceSubmitting(true);
+    setAdviceRejection(null);
+    try {
+      await dispatch(
+        submitAdvice({
+          name: adviceGuestName,
+          advice: adviceText,
+          sessionId: getSessionId(),
+        })
+      ).unwrap();
+      setAdviceSent(true);
+      setShowAdviceHint(false);
+      setTimeout(() => setAdviceSent(false), 3000);
+    } catch (err: unknown) {
+      if (typeof err === 'string') setAdviceRejection(err);
+    } finally {
+      setAdviceSubmitting(false);
+    }
+  };
+
   const handleOpenLetter = () => {
     if (isRevealed) {
       setShowChat(true);
@@ -296,19 +433,44 @@ function Home() {
 
   return (
     <PageContainer className="relative flex min-h-screen flex-col items-center justify-center text-center">
+      <ChristPhotoCascade />
       <SparkleBackground />
       <div className="relative z-10 w-full animate-fade-in">
-        <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] text-gold tablet:text-sm tablet:tracking-[0.3em]">
+        <p
+          className="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] tablet:text-sm tablet:tracking-[0.3em]"
+          style={{
+            background: 'linear-gradient(90deg, #BF9B30 0%, #D4A843 30%, #FFD700 50%, #D4A843 70%, #BF9B30 100%)',
+            backgroundSize: '200% auto',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            animation: 'titleShimmer 5s ease-in-out infinite',
+          }}
+        >
           La Iglesia de Jesucristo de los Santos de los Últimos Días
         </p>
 
         <DecorativeDivider />
 
-        <h1 className="font-serif text-2xl font-bold text-navy tablet:text-5xl desktop:text-7xl">
+        <h1
+          className="font-serif text-2xl font-bold tablet:text-5xl desktop:text-7xl"
+          style={{
+            background: 'linear-gradient(90deg, #3B2140 0%, #3B2140 35%, #BF9B30 50%, #3B2140 65%, #3B2140 100%)',
+            backgroundSize: '200% auto',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            animation: 'titleShimmer 4s ease-in-out infinite',
+          }}
+        >
           Llamada a Servir
         </h1>
 
-        <p className="mt-3 text-2xl text-slate tablet:mt-4 tablet:text-3xl" style={{ fontFamily: "'Dancing Script', cursive" }}>
+        <p
+          className="mt-3 text-2xl text-slate tablet:mt-4 tablet:text-3xl"
+          style={{
+            fontFamily: "'Dancing Script', cursive",
+            animation: 'textGlow 3s ease-in-out infinite 1s',
+          }}
+        >
           {missionaryName}
         </p>
 
@@ -318,86 +480,240 @@ function Home() {
         <div>
           <div
             onClick={handleOpenLetter}
-            className={`group relative mx-auto w-60 tablet:w-80 ${isRevealed ? 'cursor-pointer' : 'cursor-default'}`}
+            className={`group relative mx-auto w-72 tablet:w-96 ${isRevealed ? 'cursor-pointer' : 'cursor-default'}`}
             style={{
               animation: isRevealed ? 'envelopeFloat 3s ease-in-out infinite' : 'none',
             }}
           >
+            {/* Floating shadow */}
+            <div
+              className="absolute -bottom-4 left-8 right-8 h-8 rounded-[50%] blur-xl transition-all duration-300 group-hover:-bottom-5"
+              style={{ background: 'rgba(59,33,64,0.15)' }}
+            />
+
             {/* Glow when ready */}
             {isRevealed && (
               <div
-                className="absolute -inset-6 z-0 rounded-full"
+                className="absolute -inset-10 z-0 rounded-full"
                 style={{
-                  animation: 'sealGlow 2s ease-in-out infinite',
-                  background: 'radial-gradient(circle, rgba(191,155,48,0.12) 0%, transparent 70%)',
+                  animation: 'sealGlow 2.5s ease-in-out infinite',
+                  background: 'radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%)',
                 }}
               />
             )}
 
-            {/* Envelope */}
+            {/* Envelope body */}
             <div
-              className={`relative z-10 overflow-hidden rounded transition-transform duration-300 ${
+              className={`relative z-10 overflow-hidden rounded-sm transition-transform duration-300 ${
                 isRevealed ? 'group-hover:scale-[1.03]' : ''
               }`}
               style={{
-                background: '#f0e9dd',
-                boxShadow: '0 4px 20px rgba(59, 33, 64, 0.12)',
-                aspectRatio: '5 / 3',
+                background: '#FAE5ED',
+                boxShadow: '0 10px 40px rgba(59,33,64,0.12), 0 2px 8px rgba(59,33,64,0.06)',
+                aspectRatio: '7 / 5',
+                animation: isRevealed ? 'sparklePulse 3s ease-in-out infinite' : 'none',
               }}
             >
+              {/* Gold ornamental border on body */}
+              <svg className="absolute inset-0 z-[15] h-full w-full" viewBox="0 0 280 200" preserveAspectRatio="none" fill="none">
+                {/* Outer border */}
+                <rect x="5" y="5" width="270" height="190" rx="1" stroke="#c9a84c" strokeWidth="0.7" opacity="0.45" />
+                <rect x="9" y="9" width="262" height="182" rx="1" stroke="#c9a84c" strokeWidth="0.35" opacity="0.3" />
+
+                {/* Corner ornament definition - top left */}
+                <g opacity="0.6" stroke="#c9a84c" fill="#c9a84c">
+                  {/* Main corner curl */}
+                  <path d="M12,12 C12,12 22,11 28,16 C34,21 30,30 24,27 C18,24 22,18 28,16" strokeWidth="0.6" fill="none" />
+                  <path d="M12,12 C12,12 11,22 16,28 C21,34 30,30 27,24 C24,18 18,22 16,28" strokeWidth="0.6" fill="none" />
+                  <circle cx="12" cy="12" r="1.5" />
+                  {/* Extended scrollwork */}
+                  <path d="M28,16 C34,13 42,11 52,12 C46,14 38,17 34,22" strokeWidth="0.45" fill="none" />
+                  <path d="M16,28 C13,34 11,42 12,52 C14,46 17,38 22,34" strokeWidth="0.45" fill="none" />
+                  <path d="M52,12 C56,11 62,10 68,11 Q62,13 56,12" strokeWidth="0.35" fill="none" />
+                  <path d="M12,52 C11,56 10,62 11,68 Q13,62 12,56" strokeWidth="0.35" fill="none" />
+                  {/* Leaf shapes */}
+                  <path d="M52,12 Q57,9 62,11 Q57,14 52,12" strokeWidth="0.25" />
+                  <path d="M12,52 Q9,57 11,62 Q14,57 12,52" strokeWidth="0.25" />
+                  <path d="M36,14 Q40,10 44,12 Q40,15 36,14" strokeWidth="0.25" />
+                  <path d="M14,36 Q10,40 12,44 Q15,40 14,36" strokeWidth="0.25" />
+                  {/* Small dots */}
+                  <circle cx="46" cy="13" r="0.5" />
+                  <circle cx="13" cy="46" r="0.5" />
+                  <circle cx="32" cy="15" r="0.4" />
+                  <circle cx="15" cy="32" r="0.4" />
+                  {/* Inner spiral detail */}
+                  <path d="M20,16 Q24,14 26,18 Q22,20 20,16" strokeWidth="0.3" fill="none" />
+                  <path d="M16,20 Q14,24 18,26 Q20,22 16,20" strokeWidth="0.3" fill="none" />
+                </g>
+
+                {/* Corner ornament - top right */}
+                <g opacity="0.6" stroke="#c9a84c" fill="#c9a84c" transform="translate(280,0) scale(-1,1)">
+                  <path d="M12,12 C12,12 22,11 28,16 C34,21 30,30 24,27 C18,24 22,18 28,16" strokeWidth="0.6" fill="none" />
+                  <path d="M12,12 C12,12 11,22 16,28 C21,34 30,30 27,24 C24,18 18,22 16,28" strokeWidth="0.6" fill="none" />
+                  <circle cx="12" cy="12" r="1.5" />
+                  <path d="M28,16 C34,13 42,11 52,12 C46,14 38,17 34,22" strokeWidth="0.45" fill="none" />
+                  <path d="M16,28 C13,34 11,42 12,52 C14,46 17,38 22,34" strokeWidth="0.45" fill="none" />
+                  <path d="M52,12 Q57,9 62,11 Q57,14 52,12" strokeWidth="0.25" />
+                  <path d="M12,52 Q9,57 11,62 Q14,57 12,52" strokeWidth="0.25" />
+                  <path d="M36,14 Q40,10 44,12 Q40,15 36,14" strokeWidth="0.25" />
+                  <path d="M14,36 Q10,40 12,44 Q15,40 14,36" strokeWidth="0.25" />
+                  <circle cx="46" cy="13" r="0.5" />
+                  <circle cx="13" cy="46" r="0.5" />
+                  <circle cx="32" cy="15" r="0.4" />
+                  <circle cx="15" cy="32" r="0.4" />
+                  <path d="M20,16 Q24,14 26,18 Q22,20 20,16" strokeWidth="0.3" fill="none" />
+                  <path d="M16,20 Q14,24 18,26 Q20,22 16,20" strokeWidth="0.3" fill="none" />
+                </g>
+
+                {/* Corner ornament - bottom left */}
+                <g opacity="0.6" stroke="#c9a84c" fill="#c9a84c" transform="translate(0,200) scale(1,-1)">
+                  <path d="M12,12 C12,12 22,11 28,16 C34,21 30,30 24,27 C18,24 22,18 28,16" strokeWidth="0.6" fill="none" />
+                  <path d="M12,12 C12,12 11,22 16,28 C21,34 30,30 27,24 C24,18 18,22 16,28" strokeWidth="0.6" fill="none" />
+                  <circle cx="12" cy="12" r="1.5" />
+                  <path d="M28,16 C34,13 42,11 52,12 C46,14 38,17 34,22" strokeWidth="0.45" fill="none" />
+                  <path d="M16,28 C13,34 11,42 12,52 C14,46 17,38 22,34" strokeWidth="0.45" fill="none" />
+                  <path d="M52,12 Q57,9 62,11 Q57,14 52,12" strokeWidth="0.25" />
+                  <path d="M12,52 Q9,57 11,62 Q14,57 12,52" strokeWidth="0.25" />
+                  <path d="M36,14 Q40,10 44,12 Q40,15 36,14" strokeWidth="0.25" />
+                  <path d="M14,36 Q10,40 12,44 Q15,40 14,36" strokeWidth="0.25" />
+                  <circle cx="46" cy="13" r="0.5" />
+                  <circle cx="13" cy="46" r="0.5" />
+                  <circle cx="32" cy="15" r="0.4" />
+                  <circle cx="15" cy="32" r="0.4" />
+                  <path d="M20,16 Q24,14 26,18 Q22,20 20,16" strokeWidth="0.3" fill="none" />
+                  <path d="M16,20 Q14,24 18,26 Q20,22 16,20" strokeWidth="0.3" fill="none" />
+                </g>
+
+                {/* Corner ornament - bottom right */}
+                <g opacity="0.6" stroke="#c9a84c" fill="#c9a84c" transform="translate(280,200) scale(-1,-1)">
+                  <path d="M12,12 C12,12 22,11 28,16 C34,21 30,30 24,27 C18,24 22,18 28,16" strokeWidth="0.6" fill="none" />
+                  <path d="M12,12 C12,12 11,22 16,28 C21,34 30,30 27,24 C24,18 18,22 16,28" strokeWidth="0.6" fill="none" />
+                  <circle cx="12" cy="12" r="1.5" />
+                  <path d="M28,16 C34,13 42,11 52,12 C46,14 38,17 34,22" strokeWidth="0.45" fill="none" />
+                  <path d="M16,28 C13,34 11,42 12,52 C14,46 17,38 22,34" strokeWidth="0.45" fill="none" />
+                  <path d="M52,12 Q57,9 62,11 Q57,14 52,12" strokeWidth="0.25" />
+                  <path d="M12,52 Q9,57 11,62 Q14,57 12,52" strokeWidth="0.25" />
+                  <path d="M36,14 Q40,10 44,12 Q40,15 36,14" strokeWidth="0.25" />
+                  <path d="M14,36 Q10,40 12,44 Q15,40 14,36" strokeWidth="0.25" />
+                  <circle cx="46" cy="13" r="0.5" />
+                  <circle cx="13" cy="46" r="0.5" />
+                  <circle cx="32" cy="15" r="0.4" />
+                  <circle cx="15" cy="32" r="0.4" />
+                  <path d="M20,16 Q24,14 26,18 Q22,20 20,16" strokeWidth="0.3" fill="none" />
+                  <path d="M16,20 Q14,24 18,26 Q20,22 16,20" strokeWidth="0.3" fill="none" />
+                </g>
+
+                {/* Side scrollwork - left */}
+                <g opacity="0.35" stroke="#c9a84c" fill="#c9a84c">
+                  <path d="M8,85 Q6,95 8,105 Q10,95 8,85" strokeWidth="0.4" fill="none" />
+                  <path d="M8,105 Q6,115 8,125 Q10,115 8,105" strokeWidth="0.4" fill="none" />
+                  <circle cx="8" cy="100" r="0.6" />
+                </g>
+
+                {/* Side scrollwork - right */}
+                <g opacity="0.35" stroke="#c9a84c" fill="#c9a84c">
+                  <path d="M272,85 Q274,95 272,105 Q270,95 272,85" strokeWidth="0.4" fill="none" />
+                  <path d="M272,105 Q274,115 272,125 Q270,115 272,105" strokeWidth="0.4" fill="none" />
+                  <circle cx="272" cy="100" r="0.6" />
+                </g>
+
+                {/* Top center ornament */}
+                <g opacity="0.35" stroke="#c9a84c" fill="#c9a84c">
+                  <path d="M120,8 Q130,6 140,8 Q150,6 160,8" strokeWidth="0.35" fill="none" />
+                  <circle cx="140" cy="7" r="0.6" />
+                </g>
+
+                {/* Bottom center ornament */}
+                <g opacity="0.35" stroke="#c9a84c" fill="#c9a84c">
+                  <path d="M120,192 Q130,194 140,192 Q150,194 160,192" strokeWidth="0.35" fill="none" />
+                  <circle cx="140" cy="193" r="0.6" />
+                </g>
+              </svg>
+
               {/* Envelope flap */}
               <div
                 className="absolute inset-x-0 top-0 z-20"
                 style={{
-                  height: '45%',
-                  background: '#e6dccb',
+                  height: '42%',
+                  background: 'linear-gradient(180deg, #F3D4DE 0%, #EEC8D4 100%)',
                   clipPath: 'polygon(0 0, 100% 0, 50% 100%)',
+                }}
+              />
+
+              {/* Gold filigree on flap */}
+              <svg className="absolute inset-x-0 top-0 z-[22] h-[42%] w-full" viewBox="0 0 280 84" preserveAspectRatio="none" fill="none" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }}>
+                {/* Flap border lines */}
+                <path d="M3,2 L140,80 L277,2" stroke="#c9a84c" strokeWidth="0.7" opacity="0.45" fill="none" />
+                <path d="M7,2 L140,76 L273,2" stroke="#c9a84c" strokeWidth="0.35" opacity="0.3" fill="none" />
+
+                {/* Star emblem on flap */}
+                <g transform="translate(140,30)" opacity="0.45" fill="#c9a84c">
+                  <path d="M0,-6 L1.2,-1.8 L6,-1.8 L2.2,1.2 L3.4,6 L0,3 L-3.4,6 L-2.2,1.2 L-6,-1.8 L-1.2,-1.8 Z" />
+                </g>
+
+                {/* Flap scrollwork - left */}
+                <g opacity="0.45" stroke="#c9a84c" fill="#c9a84c">
+                  <path d="M10,3 C20,3 26,6 24,12 C22,6 16,4 10,3" strokeWidth="0.45" />
+                  <path d="M10,3 Q34,6 52,22" strokeWidth="0.35" fill="none" />
+                  <path d="M24,8 Q30,6 36,8 Q30,10 24,8" strokeWidth="0.25" />
+                  <circle cx="10" cy="3" r="1" />
+                  <circle cx="30" cy="7" r="0.4" />
+                </g>
+                {/* Flap scrollwork - right */}
+                <g opacity="0.45" stroke="#c9a84c" fill="#c9a84c" transform="translate(280,0) scale(-1,1)">
+                  <path d="M10,3 C20,3 26,6 24,12 C22,6 16,4 10,3" strokeWidth="0.45" />
+                  <path d="M10,3 Q34,6 52,22" strokeWidth="0.35" fill="none" />
+                  <path d="M24,8 Q30,6 36,8 Q30,10 24,8" strokeWidth="0.25" />
+                  <circle cx="10" cy="3" r="1" />
+                  <circle cx="30" cy="7" r="0.4" />
+                </g>
+              </svg>
+
+              {/* Bottom V-shape fold */}
+              <div
+                className="absolute inset-x-0 bottom-0 z-[5]"
+                style={{
+                  height: '60%',
+                  clipPath: 'polygon(0 100%, 50% 10%, 100% 100%)',
+                  background: 'linear-gradient(0deg, rgba(201,168,76,0.04) 0%, transparent 100%)',
                 }}
               />
 
               {/* Fold lines */}
               <svg className="absolute inset-0 z-10 h-full w-full" preserveAspectRatio="none">
-                <line x1="0" y1="100%" x2="50%" y2="40%" stroke="rgba(180,160,130,0.25)" strokeWidth="1" />
-                <line x1="100%" y1="100%" x2="50%" y2="40%" stroke="rgba(180,160,130,0.25)" strokeWidth="1" />
+                <line x1="0" y1="100%" x2="50%" y2="38%" stroke="rgba(201,168,76,0.15)" strokeWidth="0.5" />
+                <line x1="100%" y1="100%" x2="50%" y2="38%" stroke="rgba(201,168,76,0.15)" strokeWidth="0.5" />
               </svg>
 
-              {/* Paper peeking out */}
-              <div
-                className="absolute inset-x-4 top-1 z-0 rounded-t-sm"
-                style={{ height: '35%', background: '#faf8f4' }}
-              />
-
-              {/* Center content */}
-              <div className="absolute inset-0 z-30 flex flex-col items-center justify-end pb-4 tablet:pb-6">
-                {/* Pink wax seal */}
-                <div className="relative mb-1 flex h-10 w-10 items-center justify-center tablet:h-12 tablet:w-12">
-                  <div
-                    className="absolute inset-0 rounded-full"
-                    style={{
-                      background: '#d946a8',
-                      boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.2), 0 2px 8px rgba(217,70,168,0.4)',
-                    }}
-                  />
-                  <div
-                    className="absolute inset-[3px] rounded-full border border-pink-300/30 tablet:inset-1"
-                    style={{
-                      background: 'radial-gradient(circle at 35% 35%, #ec4899 0%, #d946a8 50%, #be185d 100%)',
-                    }}
-                  />
-                </div>
-
-                <p className="font-serif text-xs font-bold text-navy/70 tablet:text-base">
+              {/* Center content - name and text only, no seal */}
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-end pb-5 tablet:pb-7">
+                {/* Name */}
+                <p className="font-serif text-sm font-bold text-navy/70 tablet:text-lg">
                   {missionaryName}
                 </p>
 
-                <div className="mx-auto mt-1 h-px w-16 bg-gold/20" />
+                {/* Decorative gold separator */}
+                <div className="mx-auto mt-1.5 flex items-center gap-2">
+                  <div className="h-px w-8 tablet:w-12" style={{ background: 'rgba(201,168,76,0.35)' }} />
+                  <div className="h-1 w-1 rotate-45" style={{ background: 'rgba(201,168,76,0.45)' }} />
+                  <div className="h-px w-8 tablet:w-12" style={{ background: 'rgba(201,168,76,0.35)' }} />
+                </div>
 
-                <p className="mt-1 text-[8px] uppercase tracking-[0.2em] text-navy/30">
+                <p className="mt-1.5 text-[7px] font-semibold uppercase tracking-[0.25em] tablet:text-[9px]" style={{ color: 'rgba(201,168,76,0.5)' }}>
                   Llamada a Servir
                 </p>
 
                 {isRevealed && (
-                  <p className="mt-1.5 text-[10px] text-gold/70">
+                  <p
+                    className="mt-2 text-[10px] font-medium"
+                    style={{
+                      background: 'linear-gradient(90deg, rgba(201,168,76,0.3) 0%, rgba(201,168,76,1) 50%, rgba(201,168,76,0.3) 100%)',
+                      backgroundSize: '200% auto',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      animation: 'titleShimmer 2s ease-in-out infinite',
+                    }}
+                  >
                     Toca para abrir
                   </p>
                 )}
@@ -407,18 +723,67 @@ function Home() {
 
           {!isRevealed && (
             <div className="mx-auto mt-3 max-w-xs space-y-1.5 text-center">
-              {eventSettings?.openingDate && (
-                <p className="text-[11px] text-slate/60">
-                  <span className="font-medium text-gold/80">Fecha de apertura:</span>{' '}
-                  {new Date(eventSettings.openingDate).toLocaleDateString('es-MX', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
+              {eventSettings?.openingDate && countdown && (
+                <div className="animate-countdown-fade space-y-3">
+                  {countdown.expired ? (
+                    <p
+                      className="font-serif text-sm font-semibold tracking-wide text-gold"
+                      style={{ animation: 'textGlow 2s ease-in-out infinite' }}
+                    >
+                      Ya es hora!
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-[10px] uppercase tracking-[0.15em] text-gold/60">
+                        Fecha de apertura
+                      </p>
+
+                      <div className="flex items-center justify-center gap-1">
+                        {[
+                          { value: countdown.days, label: 'Días' },
+                          { value: countdown.hours, label: 'Hrs' },
+                          { value: countdown.minutes, label: 'Min' },
+                          { value: countdown.seconds, label: 'Seg' },
+                        ].map(({ value, label }, i) => (
+                          <div key={label} className="flex items-center">
+                            <div className="flex flex-col items-center">
+                              <div
+                                className="animate-countdown-pulse rounded-lg border border-gold/15 px-2 py-1.5"
+                                style={{
+                                  background: 'rgba(248, 224, 232, 0.35)',
+                                  animationDelay: `${i * 0.3}s`,
+                                  perspective: '200px',
+                                }}
+                              >
+                                <span
+                                  key={value}
+                                  className="block font-serif text-lg font-bold tabular-nums text-navy"
+                                  style={{ animation: 'countdownFlipIn 0.4s ease-out' }}
+                                >
+                                  {String(value).padStart(2, '0')}
+                                </span>
+                              </div>
+                              <span className="mt-1 text-[8px] uppercase tracking-[0.12em] text-slate/60">
+                                {label}
+                              </span>
+                            </div>
+                            {i < 3 && (
+                              <span
+                                className="animate-countdown-colon mb-3 px-0.5 font-serif text-sm text-gold/50"
+                              >
+                                :
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <p className="text-[10px] italic text-slate/40">
+                        {openingDateFormatted}
+                      </p>
+                    </>
+                  )}
+                </div>
               )}
               {eventSettings?.locationAddress && (
                 <p className="text-[11px] text-slate/60">
@@ -447,31 +812,6 @@ function Home() {
                   Ver en Google Maps
                 </a>
               )}
-              {eventSettings?.locationUrl && (() => {
-                const url = eventSettings.locationUrl;
-                let embedSrc = '';
-                if (url.includes('/embed')) {
-                  embedSrc = url;
-                } else {
-                  const query = eventSettings.locationAddress || url;
-                  embedSrc = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-                }
-                return (
-                  <div className="mt-3 overflow-hidden rounded-lg border border-rose-soft">
-                    <iframe
-                      key={embedSrc}
-                      src={embedSrc}
-                      width="100%"
-                      height="150"
-                      style={{ border: 0 }}
-                      allowFullScreen
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      title="Ubicación del evento"
-                    />
-                  </div>
-                );
-              })()}
               {!eventSettings?.openingDate && !eventSettings?.locationAddress && (
                 <p className="text-[10px] text-slate/35">
                   El llamamiento será revelado durante el evento
@@ -484,18 +824,23 @@ function Home() {
         <DecorativeDivider className="my-5 tablet:my-8" />
       </div>
 
+      {/* Photo carousel */}
+      <PhotoCarousel />
+
       {/* Action buttons */}
       <div className="relative z-10 flex w-full flex-col items-center gap-3 tablet:gap-4">
         <div className="flex w-full flex-col gap-2 tablet:flex-row tablet:justify-center tablet:gap-3">
           <button
-            onClick={() => { setShowPredict(true); setShowAdvice(false); }}
+            onClick={handleScrollToMap}
             className="w-full rounded-full border-2 border-gold bg-transparent px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gold transition-colors hover:bg-gold hover:text-white tablet:w-auto tablet:px-6 tablet:py-2.5 tablet:text-sm"
+            style={{ animation: 'sparklePulse 4s ease-in-out infinite' }}
           >
-            Registrar Predicción
+            Mi Predicción
           </button>
           <button
-            onClick={() => { setShowAdvice(true); setShowPredict(false); }}
+            onClick={handleScrollToAdvice}
             className="w-full rounded-full border-2 border-gold bg-transparent px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gold transition-colors hover:bg-gold hover:text-white tablet:w-auto tablet:px-6 tablet:py-2.5 tablet:text-sm"
+            style={{ animation: 'sparklePulse 4s ease-in-out infinite 2s' }}
           >
             Dejar un Consejo
           </button>
@@ -561,106 +906,49 @@ function Home() {
         </div>
       </div>
 
-      {/* Predict inline */}
-      {showPredict && (
-        <div ref={predictRef} className="relative z-10 mt-6 w-full animate-fade-in tablet:mt-8">
-          <button
-            onClick={() => setShowPredict(false)}
-            className="mb-4 flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-gold transition-colors hover:text-gold-dark"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Volver
-          </button>
-          <Suspense fallback={null}>
-            <PredictPage />
-          </Suspense>
-        </div>
-      )}
+      {/* Predictions marquee */}
+      <div className="relative left-1/2 z-10 mt-6 w-screen -translate-x-1/2 tablet:mt-8">
+        {predictions.length > 0 && (() => {
+          const formatDate = (d: string) =>
+            new Date(d).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+          const predShouldScroll = predictions.length > 3;
 
-      {/* Advice inline */}
-      {showAdvice && (
-        <div ref={adviceRef} className="relative z-10 mt-6 w-full animate-fade-in tablet:mt-8">
-          <button
-            onClick={() => setShowAdvice(false)}
-            className="mb-4 flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-gold transition-colors hover:text-gold-dark"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Volver
-          </button>
-          <Suspense fallback={null}>
-            <AdvicePage />
-          </Suspense>
-        </div>
-      )}
-
-      {/* Activity marquee + Map — full bleed */}
-      {(predictions.length > 0 || adviceEntries.length > 0) && (
-        <div className="relative left-1/2 z-10 mt-6 w-screen -translate-x-1/2 tablet:mt-8">
-          {/* Combined marquee: predictions + advice entries sorted by date */}
-          {(() => {
-            type MarqueeItem =
-              | { type: 'prediction'; data: Prediction }
-              | { type: 'advice'; data: { id: string; guestName: string; createdAt: string } };
-
-            const items: MarqueeItem[] = [
-              ...predictions.map((p) => ({ type: 'prediction' as const, data: p })),
-              ...adviceEntries.map((a) => ({ type: 'advice' as const, data: a })),
-            ].sort((a, b) => new Date(b.data.createdAt).getTime() - new Date(a.data.createdAt).getTime());
-
-            const formatDate = (d: string) =>
-              new Date(d).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
-
-            return (
-              <div ref={marqueeContainerRef} className="overflow-hidden px-2 tablet:px-0">
+          return (
+            <>
+              <p className="mb-2 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-gold tablet:text-xs">
+                {predictions.length} {predictions.length === 1 ? 'predicción' : 'predicciones'}
+              </p>
+              <div className="overflow-hidden px-2 tablet:px-0">
                 <div
-                  ref={marqueeContentRef}
-                  className={`flex gap-2 tablet:gap-3 ${shouldScroll ? '' : 'justify-center'}`}
-                  style={shouldScroll ? {
+                  className={`flex gap-2 tablet:gap-3 ${predShouldScroll ? '' : 'justify-center'}`}
+                  style={predShouldScroll ? {
                     width: 'max-content',
-                    animation: `marqueeScroll ${Math.max(items.length * 4, 12)}s linear infinite`,
+                    animation: `marqueeScroll ${Math.max(predictions.length * 4, 12)}s linear infinite`,
                   } : undefined}
                 >
-                  {(shouldScroll ? [...items, ...items] : items).map((item, i) => (
+                  {(predShouldScroll ? [...predictions, ...predictions] : predictions).map((p, i) => (
                     <div
-                      key={`${item.data.id}-${i}`}
+                      key={`pred-${p.id}-${i}`}
                       className="w-40 shrink-0 rounded-lg border border-rose-soft bg-warm-white p-2.5 text-left tablet:w-52 tablet:rounded-xl tablet:p-4"
                     >
                       <div className="flex items-start gap-2 tablet:gap-3">
                         <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-navy/5 tablet:h-8 tablet:w-8">
-                          {item.type === 'prediction' ? (
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="text-navy/40 tablet:h-[14px] tablet:w-[14px]">
-                              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" fill="currentColor" />
-                            </svg>
-                          ) : (
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="text-gold/60 tablet:h-[14px] tablet:w-[14px]">
-                              <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="currentColor" />
-                            </svg>
-                          )}
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="text-navy/40 tablet:h-[14px] tablet:w-[14px]">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" fill="currentColor" />
+                          </svg>
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-serif text-sm font-bold text-navy tablet:text-base">
-                            {normalizeName(item.data.guestName)}
+                            {normalizeName(p.guestName)}
                           </p>
-                          {item.type === 'prediction' ? (
-                            <>
-                              <p className="mt-0.5 truncate text-xs text-navy/70 tablet:text-sm">
-                                {item.data.city}{item.data.state ? `, ${item.data.state}` : ''}
-                              </p>
-                              <p className="text-[10px] text-slate/50 tablet:text-xs">
-                                {item.data.country}
-                              </p>
-                            </>
-                          ) : (
-                            <p className="mt-0.5 text-xs text-gold/70 tablet:text-sm">
-                              dejó un consejo
-                            </p>
-                          )}
+                          <p className="mt-0.5 truncate text-xs text-navy/70 tablet:text-sm">
+                            {p.city}{p.state ? `, ${p.state}` : ''}
+                          </p>
+                          <p className="text-[10px] text-slate/50 tablet:text-xs">
+                            {p.country}
+                          </p>
                           <p className="mt-0.5 text-[9px] text-slate/40 tablet:text-[10px]">
-                            {formatDate(item.data.createdAt)}
+                            {formatDate(p.createdAt)}
                           </p>
                         </div>
                       </div>
@@ -668,36 +956,182 @@ function Home() {
                   ))}
                 </div>
               </div>
-            );
-          })()}
+            </>
+          );
+        })()}
 
-          <div className="mt-3 flex justify-center gap-4 tablet:mt-4">
-            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-gold tablet:text-xs">
-              {predictions.length} {predictions.length === 1 ? 'predicción' : 'predicciones'}
+        {/* Map */}
+        <div ref={mapSectionRef} className="mt-3 px-4 tablet:mt-4 tablet:px-[10%] desktop:px-[15%]">
+          {showMapHint && (
+            <p className="mb-2 animate-fade-in text-center text-sm font-medium text-gold">
+              Toca en el mapa el lugar donde crees que será enviada
             </p>
-            {adviceEntries.length > 0 && (
-              <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-gold tablet:text-xs">
-                {adviceEntries.length} {adviceEntries.length === 1 ? 'consejo' : 'consejos'}
-              </p>
-            )}
-          </div>
+          )}
+          <Suspense fallback={null}>
+            <WorldMap
+              selectedCountryCode=""
+              selectedStateCode=""
+              selectedCity=""
+              countryCenter={null}
+              states={[]}
+              cities={[]}
+              predictions={predictions}
+              onMapClick={handleGlobalMapClick}
+            />
+          </Suspense>
+          <p className="mt-2 text-center text-xs text-slate/60">
+            Haz clic en el mapa para registrar tu predicción
+          </p>
+        </div>
 
-          {/* Map */}
-          {predictions.length > 0 && (
-            <div className="mt-3 px-4 tablet:mt-4 tablet:px-[10%] desktop:px-[15%]">
-              <Suspense fallback={null}>
-                <WorldMap
-                  selectedCountryCode=""
-                  selectedStateCode=""
-                  selectedCity=""
-                  countryCenter={null}
-                  states={[]}
-                  cities={[]}
-                  predictions={predictions}
+        {/* Advice form */}
+        <div ref={adviceSectionRef} className="mt-6 px-4 tablet:mt-8 tablet:px-[10%] desktop:px-[15%]">
+          {showAdviceHint && (
+            <p className="mb-3 animate-fade-in text-center text-sm font-medium text-gold">
+              Escribe un consejo o mensaje para la misionera
+            </p>
+          )}
+          {adviceSent ? (
+            <div className="flex flex-col items-center py-6">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" className="text-gold">
+                <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="currentColor" />
+              </svg>
+              <p className="mt-3 font-serif text-lg font-bold text-navy">Consejo enviado</p>
+              <p className="mt-1 text-sm text-slate/70">Puedes enviar otro consejo si lo deseas</p>
+            </div>
+          ) : (
+            <div className="mx-auto max-w-lg rounded-xl border border-rose-soft bg-warm-white p-6 shadow-sm">
+              <p className="mb-1 text-center text-xs font-medium uppercase tracking-[0.15em] text-gold/60">Buzón de Consejos</p>
+              <p className="mb-4 text-center text-[11px] italic text-slate/50">Solo la misionera podrá leer tu consejo</p>
+              <div className="mb-4">
+                <label htmlFor="adviceName" className="mb-1 block text-sm font-medium text-navy">
+                  Tu nombre
+                </label>
+                <input
+                  id="adviceName"
+                  type="text"
+                  value={adviceGuestName}
+                  onChange={(e) => {
+                    dispatch(setAdviceGuestName(e.target.value));
+                    if (e.target.value.trim()) setAdviceErrors((prev) => ({ ...prev, guestName: false }));
+                  }}
+                  placeholder="Escribe tu nombre..."
+                  className={`w-full rounded-lg border bg-cream px-4 py-3 text-navy outline-none transition-colors placeholder:text-slate/40 focus:border-gold ${adviceErrors.guestName ? 'border-red-400' : 'border-rose-soft'}`}
                 />
-              </Suspense>
+              </div>
+              <div className="mb-4">
+                <label htmlFor="adviceText" className="mb-1 block text-sm font-medium text-navy">
+                  Tu consejo o mensaje
+                </label>
+                <textarea
+                  id="adviceText"
+                  value={adviceText}
+                  onChange={(e) => {
+                    dispatch(setAdviceText(e.target.value));
+                    if (e.target.value.trim()) setAdviceErrors((prev) => ({ ...prev, advice: false }));
+                  }}
+                  placeholder="Escribe tu consejo para la misionera..."
+                  rows={4}
+                  className={`w-full resize-none rounded-lg border bg-cream px-4 py-3 text-navy outline-none transition-colors placeholder:text-slate/40 focus:border-gold ${adviceErrors.advice ? 'border-red-400' : 'border-rose-soft'}`}
+                />
+              </div>
+              <button
+                onClick={handleAdviceSubmit}
+                disabled={adviceSubmitting}
+                className="w-full rounded-full bg-gold py-3 text-sm font-semibold uppercase tracking-wider text-white transition-colors hover:bg-gold-dark disabled:opacity-50"
+              >
+                {adviceSubmitting ? 'Enviando...' : 'Enviar Consejo'}
+              </button>
+              {adviceRejection && (
+                <p className="mt-3 text-center text-sm text-red-500">{adviceRejection}</p>
+              )}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Quick Prediction Modal */}
+      {quickPrediction && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setQuickPrediction(null)}
+        >
+          <div
+            className="relative mx-4 w-full max-w-sm animate-fade-in rounded-2xl border border-gold/20 bg-warm-white p-6 shadow-2xl tablet:p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setQuickPrediction(null)}
+              className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-slate/40 transition-colors hover:bg-blush/20 hover:text-gold"
+              aria-label="Cerrar"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
+            <p className="mb-1 text-xs uppercase tracking-widest text-gold/60">Predicción</p>
+            <h3 className="mb-5 font-serif text-lg font-semibold text-navy">¿A dónde será enviada?</h3>
+
+            {/* Name input */}
+            <div className="mb-4">
+              <label htmlFor="quickName" className="mb-1 block text-sm font-medium text-navy">
+                Tu nombre
+              </label>
+              <input
+                id="quickName"
+                type="text"
+                value={quickName}
+                onChange={(e) => {
+                  setQuickName(e.target.value);
+                  if (e.target.value.trim()) setQuickNameError(false);
+                }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleQuickSubmit(); }}
+                placeholder="Escribe tu nombre..."
+                autoFocus
+                className={`w-full rounded-lg border bg-cream px-4 py-3 text-navy outline-none transition-colors placeholder:text-slate/40 focus:border-gold ${quickNameError ? 'border-red-400' : 'border-rose-soft'}`}
+              />
+              {quickNameError && (
+                <p className="mt-1 text-xs text-red-400">Ingresa tu nombre</p>
+              )}
+            </div>
+
+            {/* Editable location */}
+            <div className="mb-5">
+              <LocationSelector
+                countries={countries}
+                states={quickStates}
+                cities={quickCities}
+                selectedCountryCode={quickPrediction.countryCode}
+                selectedStateCode={quickPrediction.stateCode}
+                selectedCity={quickPrediction.city}
+                onCountryChange={(code) => {
+                  const name = getCountryName(code);
+                  setQuickPrediction((prev) => prev ? { ...prev, countryCode: code, country: name, stateCode: '', state: '', city: '' } : null);
+                  if (code) setQuickLocationErrors((prev) => ({ ...prev, country: false }));
+                }}
+                onStateChange={(code) => {
+                  const name = getStateName(code, quickPrediction.countryCode);
+                  setQuickPrediction((prev) => prev ? { ...prev, stateCode: code, state: name, city: '' } : null);
+                  if (code) setQuickLocationErrors((prev) => ({ ...prev, state: false }));
+                }}
+                onCityChange={(name) => {
+                  setQuickPrediction((prev) => prev ? { ...prev, city: name } : null);
+                  if (name) setQuickLocationErrors((prev) => ({ ...prev, city: false }));
+                }}
+                errors={quickLocationErrors}
+              />
+            </div>
+
+            <button
+              onClick={handleQuickSubmit}
+              disabled={quickSubmitting}
+              className="w-full rounded-full bg-gold py-3 text-sm font-semibold uppercase tracking-wider text-white transition-colors hover:bg-gold-dark disabled:opacity-50"
+            >
+              {quickSubmitting ? 'Guardando...' : 'Guardar Predicción'}
+            </button>
+          </div>
         </div>
       )}
 
@@ -1008,6 +1442,37 @@ function Home() {
           </div>
         </div>
       )}
+      {/* Google Maps — event location */}
+      {!isRevealed && eventSettings?.locationUrl && (() => {
+        const url = eventSettings.locationUrl;
+        let embedSrc = '';
+        if (url.includes('/embed')) {
+          embedSrc = url;
+        } else {
+          const query = eventSettings.locationAddress || url;
+          embedSrc = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+        }
+        return (
+          <div className="relative left-1/2 z-10 mt-8 w-screen -translate-x-1/2">
+            <p className="mb-2 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-gold/70">
+              Ubicación del evento
+            </p>
+            <div className="overflow-hidden">
+              <iframe
+                key={embedSrc}
+                src={embedSrc}
+                width="100%"
+                height="200"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Ubicación del evento"
+              />
+            </div>
+          </div>
+        );
+      })()}
     </PageContainer>
   );
 }

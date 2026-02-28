@@ -27,6 +27,10 @@ export default {
         'fade-in': 'fadeIn 0.6s ease-in-out',
         'slide-up': 'slideUp 0.5s ease-out',
         'cover-breathe': 'coverBreathe 3s ease-in-out infinite',
+        'countdown-pulse': 'countdownPulse 2.5s ease-in-out infinite',
+        'countdown-flip': 'countdownFlipIn 0.4s ease-out',
+        'countdown-fade': 'countdownFadeUp 0.6s ease-out',
+        'countdown-colon': 'countdownColon 1s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
