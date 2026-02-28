@@ -31,6 +31,7 @@ export default {
         'countdown-flip': 'countdownFlipIn 0.4s ease-out',
         'countdown-fade': 'countdownFadeUp 0.6s ease-out',
         'countdown-colon': 'countdownColon 1s ease-in-out infinite',
+        'bounce-pin': 'bouncePin 1.5s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {

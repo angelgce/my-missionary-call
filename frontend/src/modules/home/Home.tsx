@@ -536,9 +536,9 @@ function Home() {
     <PageContainer className="relative flex min-h-screen flex-col items-center justify-center text-center">
       <ChristPhotoCascade />
       <SparkleBackground />
-      <div className="relative z-10 w-full animate-fade-in">
+      <div className="relative z-10 w-full animate-fade-in pb-2">
         <p
-          className="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] tablet:text-sm tablet:tracking-[0.3em]"
+          className="mb-3 text-[10px] font-medium uppercase tracking-[0.2em] tablet:text-sm tablet:tracking-[0.3em]"
           style={{
             background: 'linear-gradient(90deg, #BF9B30 0%, #D4A843 30%, #FFD700 50%, #D4A843 70%, #BF9B30 100%)',
             backgroundSize: '200% auto',
@@ -550,7 +550,7 @@ function Home() {
           La Iglesia de Jesucristo de los Santos de los Últimos Días
         </p>
 
-        <DecorativeDivider className="my-2 tablet:my-3" />
+        <DecorativeDivider className="my-3 tablet:my-4" />
 
         <h1
           className="font-serif text-2xl font-bold tablet:text-5xl desktop:text-7xl"
@@ -575,7 +575,7 @@ function Home() {
           {missionaryName}
         </p>
 
-        <DecorativeDivider className="my-2 tablet:my-3" />
+        <DecorativeDivider className="my-3 tablet:my-4" />
 
         {/* Envelope */}
         <div>
@@ -823,7 +823,7 @@ function Home() {
           </div>
 
           {(!isRevealed || (isRevealed && !isFreeForAll && !isAdmin)) && (
-            <div className="mx-auto mt-3 max-w-xs space-y-1.5 text-center">
+            <div className="mx-auto mt-4 max-w-xs space-y-2 text-center">
               {isRevealed && !isFreeForAll && !isAdmin ? (
                 <div className="space-y-2">
                   <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-gold/30 bg-cream">
@@ -850,7 +850,7 @@ function Home() {
                           <div key={label} className="flex items-center">
                             <div className="flex flex-col items-center">
                               <div
-                                className="animate-countdown-pulse rounded-lg border border-gold/15 px-2 py-1.5"
+                                className="animate-countdown-pulse rounded-xl border border-gold/15 px-3 py-2"
                                 style={{
                                   background: 'rgba(248, 224, 232, 0.35)',
                                   animationDelay: `${i * 0.3}s`,
@@ -907,7 +907,7 @@ function Home() {
                               <div key={label} className="flex items-center">
                                 <div className="flex flex-col items-center">
                                   <div
-                                    className="animate-countdown-pulse rounded-lg border border-gold/15 px-2 py-1.5"
+                                    className="animate-countdown-pulse rounded-xl border border-gold/15 px-3 py-2"
                                     style={{
                                       background: 'rgba(248, 224, 232, 0.35)',
                                       animationDelay: `${i * 0.3}s`,
@@ -945,21 +945,42 @@ function Home() {
                     </div>
                   )}
                   {eventSettings?.locationAddress && (
-                    <p className="text-[11px] text-slate/60">
-                      <span className="font-medium text-gold/80">Lugar:</span>{' '}
-                      {eventSettings.locationUrl ? (
-                        <a
-                          href={eventSettings.locationUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline decoration-gold/30 underline-offset-2 transition-colors hover:text-gold"
+                    eventSettings.locationUrl ? (
+                      <a
+                        href={eventSettings.locationUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex items-center gap-1.5 rounded-lg border border-gold/20 bg-blush/30 px-3 py-2 transition-all hover:border-gold/40 hover:bg-blush/50"
+                      >
+                        <svg
+                          className="h-4 w-4 shrink-0 animate-bounce-pin text-gold"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
                         >
-                          {eventSettings.locationAddress}
-                        </a>
-                      ) : (
-                        eventSettings.locationAddress
-                      )}
-                    </p>
+                          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                        </svg>
+                        <span className="flex flex-col">
+                          <span className="text-[11px] leading-tight text-slate/70 group-hover:text-slate">
+                            {eventSettings.locationAddress}
+                          </span>
+                          <span className="text-[9px] font-medium text-gold group-hover:text-gold-dark">
+                            Toca para ver en mapa &rarr;
+                          </span>
+                        </span>
+                      </a>
+                    ) : (
+                      <p className="flex items-center gap-1 text-[11px] text-slate/60">
+                        <svg
+                          className="h-4 w-4 shrink-0 animate-bounce-pin text-gold/80"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                        </svg>
+                        <span className="font-medium text-gold/80">Lugar:</span>{' '}
+                        {eventSettings.locationAddress}
+                      </p>
+                    )
                   )}
                   {eventSettings?.locationUrl && !eventSettings?.locationAddress && (
                     <a
@@ -982,30 +1003,36 @@ function Home() {
           )}
         </div>
 
-        <DecorativeDivider className="my-2 tablet:my-3" />
+        <DecorativeDivider className="my-4 tablet:my-5" />
       </div>
 
       {/* Action buttons */}
-      <div className="relative z-10 flex w-full flex-col items-center gap-3 tablet:gap-4">
-        <div className="flex w-full flex-col gap-2 tablet:flex-row tablet:justify-center tablet:gap-3">
+      <div className="relative z-10 flex w-full flex-col items-center gap-4 tablet:gap-5">
+        <div className="flex w-full flex-col gap-3 tablet:flex-row tablet:justify-center tablet:gap-4">
           <button
             onClick={handleScrollToMap}
-            className="w-full rounded-full border-2 border-gold bg-transparent px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gold transition-colors hover:bg-gold hover:text-white tablet:w-auto tablet:px-6 tablet:py-2.5 tablet:text-sm"
-            style={{ animation: 'sparklePulse 4s ease-in-out infinite' }}
+            className="w-full rounded-full border-2 border-gold bg-transparent px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-gold transition-all hover:bg-gold hover:text-white hover:shadow-lg tablet:w-auto tablet:px-8 tablet:py-3 tablet:text-sm"
+            style={{
+              animation: 'sparklePulse 4s ease-in-out infinite',
+              boxShadow: '0 2px 8px rgba(212, 132, 155, 0.1)',
+            }}
           >
             Mi Predicción
           </button>
           <button
             onClick={handleScrollToAdvice}
-            className="w-full rounded-full border-2 border-gold bg-transparent px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gold transition-colors hover:bg-gold hover:text-white tablet:w-auto tablet:px-6 tablet:py-2.5 tablet:text-sm"
-            style={{ animation: 'sparklePulse 4s ease-in-out infinite 2s' }}
+            className="w-full rounded-full border-2 border-gold bg-transparent px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-gold transition-all hover:bg-gold hover:text-white hover:shadow-lg tablet:w-auto tablet:px-8 tablet:py-3 tablet:text-sm"
+            style={{
+              animation: 'sparklePulse 4s ease-in-out infinite 2s',
+              boxShadow: '0 2px 8px rgba(212, 132, 155, 0.1)',
+            }}
           >
             Dejar un Consejo
           </button>
         </div>
 
         {/* Share */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 rounded-full border border-rose-soft/60 bg-warm-white/60 px-5 py-2.5" style={{ boxShadow: '0 1px 4px rgba(59, 33, 64, 0.04)' }}>
           <span className="text-[10px] uppercase tracking-wider text-slate/40">Compartir</span>
           <div className="flex items-center gap-2">
             <a
@@ -1068,7 +1095,7 @@ function Home() {
       <PhotoCarousel />
 
       {/* Predictions marquee */}
-      <div className="relative left-1/2 z-10 mt-6 w-screen -translate-x-1/2 tablet:mt-8">
+      <div className="relative left-1/2 z-10 mt-8 w-screen -translate-x-1/2 py-6 tablet:mt-10 tablet:py-8" style={{ background: 'rgba(248, 224, 232, 0.2)' }}>
         {predictions.length > 0 && (() => {
           const formatDate = (d: string) =>
             new Date(d).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
@@ -1096,7 +1123,8 @@ function Home() {
                   {(predShouldScroll ? [...predictions, ...predictions] : predictions).map((p, i) => (
                     <div
                       key={`pred-${p.id}-${i}`}
-                      className="w-40 shrink-0 rounded-lg border border-rose-soft bg-warm-white p-2.5 text-left tablet:w-52 tablet:rounded-xl tablet:p-4"
+                      className="w-44 shrink-0 rounded-xl border border-rose-soft/80 bg-warm-white p-3 text-left tablet:w-56 tablet:rounded-2xl tablet:p-4"
+                      style={{ boxShadow: '0 2px 12px rgba(59, 33, 64, 0.06), 0 1px 3px rgba(59, 33, 64, 0.04)' }}
                     >
                       <div className="flex items-start gap-2 tablet:gap-3">
                         <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-navy/5 tablet:h-8 tablet:w-8">
@@ -1128,39 +1156,49 @@ function Home() {
         })()}
 
         {/* Map */}
-        <div ref={mapSectionRef} className="mt-3 px-4 tablet:mt-4 tablet:px-[10%] desktop:px-[15%]">
-          {showMapHint && (
-            <p className="mb-2 animate-fade-in text-center text-sm font-medium text-gold">
-              Toca en el mapa el lugar donde crees que será enviada
+        <div ref={mapSectionRef} className="mt-6 px-4 tablet:mt-8 tablet:px-[10%] desktop:px-[15%]">
+          <div
+            className="overflow-hidden rounded-2xl border border-rose-soft/60 bg-warm-white p-3 tablet:rounded-3xl tablet:p-5"
+            style={{ boxShadow: '0 4px 20px rgba(59, 33, 64, 0.06), 0 1px 4px rgba(59, 33, 64, 0.03)' }}
+          >
+            {showMapHint && (
+              <p className="mb-3 animate-fade-in text-center text-sm font-medium text-gold">
+                Toca en el mapa el lugar donde crees que será enviada
+              </p>
+            )}
+            <div className="overflow-hidden rounded-xl tablet:rounded-2xl">
+              <Suspense fallback={null}>
+                <WorldMap
+                  selectedCountryCode=""
+                  selectedStateCode=""
+                  selectedCity=""
+                  countryCenter={null}
+                  states={[]}
+                  cities={[]}
+                  predictions={predictions}
+                  onMapClick={handleGlobalMapClick}
+                  onPredictionClick={() => {}}
+                />
+              </Suspense>
+            </div>
+            <p className="mt-3 text-center text-xs text-slate/60">
+              Haz clic en el mapa para registrar tu predicción
             </p>
-          )}
-          <Suspense fallback={null}>
-            <WorldMap
-              selectedCountryCode=""
-              selectedStateCode=""
-              selectedCity=""
-              countryCenter={null}
-              states={[]}
-              cities={[]}
-              predictions={predictions}
-              onMapClick={handleGlobalMapClick}
-              onPredictionClick={() => {}}
-            />
-          </Suspense>
-          <p className="mt-2 text-center text-xs text-slate/60">
-            Haz clic en el mapa para registrar tu predicción
-          </p>
+          </div>
         </div>
 
         {/* Advice form */}
-        <div ref={adviceSectionRef} className="mt-6 px-4 tablet:mt-8 tablet:px-[10%] desktop:px-[15%]">
+        <div ref={adviceSectionRef} className="mt-8 px-4 tablet:mt-10 tablet:px-[10%] desktop:px-[15%]">
           {showAdviceHint && (
             <p className="mb-3 animate-fade-in text-center text-sm font-medium text-gold">
               Escribe un consejo o mensaje para la misionera
             </p>
           )}
           {adviceSent ? (
-            <div className="flex flex-col items-center py-6">
+            <div
+              className="mx-auto flex max-w-lg flex-col items-center rounded-2xl border border-rose-soft/50 bg-warm-white py-8"
+              style={{ boxShadow: '0 4px 20px rgba(59, 33, 64, 0.06)' }}
+            >
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" className="text-gold">
                 <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="currentColor" />
               </svg>
@@ -1168,11 +1206,14 @@ function Home() {
               <p className="mt-1 text-sm text-slate/70">Puedes enviar otro consejo si lo deseas</p>
             </div>
           ) : (
-            <div className="mx-auto max-w-lg rounded-xl border border-rose-soft bg-warm-white p-6 shadow-sm">
-              <p className="mb-1 text-center text-xs font-medium uppercase tracking-[0.15em] text-gold/60">Buzón de Consejos</p>
-              <p className="mb-4 text-center text-[11px] italic text-slate/50">Solo la misionera podrá leer tu consejo</p>
-              <div className="mb-4">
-                <label htmlFor="adviceName" className="mb-1 block text-sm font-medium text-navy">
+            <div
+              className="mx-auto max-w-lg rounded-2xl border border-rose-soft/70 bg-warm-white p-6 tablet:p-8"
+              style={{ boxShadow: '0 4px 20px rgba(59, 33, 64, 0.06), 0 1px 4px rgba(59, 33, 64, 0.03)' }}
+            >
+              <p className="mb-1.5 text-center text-xs font-medium uppercase tracking-[0.15em] text-gold/60">Buzón de Consejos</p>
+              <p className="mb-5 text-center text-[11px] italic text-slate/50">Solo la misionera podrá leer tu consejo</p>
+              <div className="mb-5">
+                <label htmlFor="adviceName" className="mb-1.5 block text-sm font-medium text-navy">
                   Tu nombre
                 </label>
                 <input
@@ -1184,11 +1225,11 @@ function Home() {
                     if (e.target.value.trim()) setAdviceErrors((prev) => ({ ...prev, guestName: false }));
                   }}
                   placeholder="Escribe tu nombre..."
-                  className={`w-full rounded-lg border bg-cream px-4 py-3 text-navy outline-none transition-colors placeholder:text-slate/40 focus:border-gold ${adviceErrors.guestName ? 'border-red-400' : 'border-rose-soft'}`}
+                  className={`w-full rounded-xl border bg-cream px-4 py-3 text-navy outline-none transition-all placeholder:text-slate/40 focus:border-gold focus:ring-2 focus:ring-gold/10 ${adviceErrors.guestName ? 'border-red-400' : 'border-rose-soft'}`}
                 />
               </div>
-              <div className="mb-4">
-                <label htmlFor="adviceText" className="mb-1 block text-sm font-medium text-navy">
+              <div className="mb-5">
+                <label htmlFor="adviceText" className="mb-1.5 block text-sm font-medium text-navy">
                   Tu consejo o mensaje
                 </label>
                 <textarea
@@ -1200,13 +1241,14 @@ function Home() {
                   }}
                   placeholder="Escribe tu consejo para la misionera..."
                   rows={4}
-                  className={`w-full resize-none rounded-lg border bg-cream px-4 py-3 text-navy outline-none transition-colors placeholder:text-slate/40 focus:border-gold ${adviceErrors.advice ? 'border-red-400' : 'border-rose-soft'}`}
+                  className={`w-full resize-none rounded-xl border bg-cream px-4 py-3 text-navy outline-none transition-all placeholder:text-slate/40 focus:border-gold focus:ring-2 focus:ring-gold/10 ${adviceErrors.advice ? 'border-red-400' : 'border-rose-soft'}`}
                 />
               </div>
               <button
                 onClick={handleAdviceSubmit}
                 disabled={adviceSubmitting}
-                className="w-full rounded-full bg-gold py-3 text-sm font-semibold uppercase tracking-wider text-white transition-colors hover:bg-gold-dark disabled:opacity-50"
+                className="w-full rounded-full bg-gold py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition-all hover:bg-gold-dark disabled:opacity-50"
+                style={{ boxShadow: '0 2px 10px rgba(212, 132, 155, 0.2)' }}
               >
                 {adviceSubmitting ? 'Enviando...' : 'Enviar Consejo'}
               </button>
@@ -1225,12 +1267,13 @@ function Home() {
           onClick={() => setQuickPrediction(null)}
         >
           <div
-            className="relative mx-4 w-full max-w-sm animate-fade-in rounded-2xl border border-gold/20 bg-warm-white p-6 shadow-2xl tablet:p-8"
+            className="relative mx-4 w-full max-w-sm animate-fade-in rounded-3xl border border-gold/15 bg-warm-white p-7 tablet:p-9"
+            style={{ boxShadow: '0 8px 40px rgba(59, 33, 64, 0.15), 0 2px 8px rgba(59, 33, 64, 0.06)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setQuickPrediction(null)}
-              className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-slate/40 transition-colors hover:bg-blush/20 hover:text-gold"
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-slate/40 transition-colors hover:bg-blush/20 hover:text-gold"
               aria-label="Cerrar"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1239,12 +1282,12 @@ function Home() {
               </svg>
             </button>
 
-            <p className="mb-1 text-xs uppercase tracking-widest text-gold/60">Predicción</p>
-            <h3 className="mb-5 font-serif text-lg font-semibold text-navy">¿A dónde será enviada?</h3>
+            <p className="mb-1.5 text-xs uppercase tracking-widest text-gold/60">Predicción</p>
+            <h3 className="mb-6 font-serif text-lg font-semibold text-navy">¿A dónde será enviada?</h3>
 
             {/* Name input */}
-            <div className="mb-4">
-              <label htmlFor="quickName" className="mb-1 block text-sm font-medium text-navy">
+            <div className="mb-5">
+              <label htmlFor="quickName" className="mb-1.5 block text-sm font-medium text-navy">
                 Tu nombre
               </label>
               <input
@@ -1258,7 +1301,7 @@ function Home() {
                 onKeyDown={(e) => { if (e.key === 'Enter') handleQuickSubmit(); }}
                 placeholder="Escribe tu nombre..."
                 autoFocus
-                className={`w-full rounded-lg border bg-cream px-4 py-3 text-navy outline-none transition-colors placeholder:text-slate/40 focus:border-gold ${quickNameError ? 'border-red-400' : 'border-rose-soft'}`}
+                className={`w-full rounded-xl border bg-cream px-4 py-3 text-navy outline-none transition-all placeholder:text-slate/40 focus:border-gold focus:ring-2 focus:ring-gold/10 ${quickNameError ? 'border-red-400' : 'border-rose-soft'}`}
               />
               {quickNameError && (
                 <p className="mt-1 text-xs text-red-400">Ingresa tu nombre</p>
@@ -1266,7 +1309,7 @@ function Home() {
             </div>
 
             {/* Editable location */}
-            <div className="mb-5">
+            <div className="mb-6">
               <LocationSelector
                 countries={countries}
                 states={quickStates}
@@ -1295,7 +1338,8 @@ function Home() {
             <button
               onClick={handleQuickSubmit}
               disabled={quickSubmitting}
-              className="w-full rounded-full bg-gold py-3 text-sm font-semibold uppercase tracking-wider text-white transition-colors hover:bg-gold-dark disabled:opacity-50"
+              className="w-full rounded-full bg-gold py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition-all hover:bg-gold-dark disabled:opacity-50"
+              style={{ boxShadow: '0 2px 10px rgba(212, 132, 155, 0.2)' }}
             >
               {quickSubmitting ? 'Guardando...' : 'Guardar Predicción'}
             </button>
@@ -1720,12 +1764,13 @@ function Home() {
           onClick={() => setShowQr(false)}
         >
           <div
-            className="relative mx-4 w-full max-w-xs animate-fade-in rounded-2xl border border-gold/20 bg-warm-white p-8 text-center shadow-2xl"
+            className="relative mx-4 w-full max-w-xs animate-fade-in rounded-3xl border border-gold/15 bg-warm-white p-8 text-center"
+            style={{ boxShadow: '0 8px 40px rgba(59, 33, 64, 0.15), 0 2px 8px rgba(59, 33, 64, 0.06)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setShowQr(false)}
-              className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-slate/40 transition-colors hover:bg-blush/20 hover:text-gold"
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-slate/40 transition-colors hover:bg-blush/20 hover:text-gold"
               aria-label="Cerrar"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1733,9 +1778,9 @@ function Home() {
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <p className="mb-1 text-xs uppercase tracking-widest text-gold/60">Escanea y comparte</p>
+            <p className="mb-1.5 text-xs uppercase tracking-widest text-gold/60">Escanea y comparte</p>
             <h3 className="mb-6 font-serif text-lg font-semibold text-navy">Código QR</h3>
-            <div className="mx-auto inline-block rounded-xl border border-rose-soft bg-cream p-4">
+            <div className="mx-auto inline-block rounded-2xl border border-rose-soft/60 bg-cream p-5" style={{ boxShadow: 'inset 0 1px 3px rgba(59, 33, 64, 0.04)' }}>
               <QRCodeSVG
                 value={shareUrl}
                 size={180}
@@ -1750,32 +1795,50 @@ function Home() {
       )}
       {/* Google Maps — event location */}
       {!isFreeForAll && eventSettings?.locationUrl && (() => {
-        const url = eventSettings.locationUrl;
-        let embedSrc = '';
-        if (url.includes('/embed')) {
-          embedSrc = url;
-        } else {
-          const query = eventSettings.locationAddress || url;
-          embedSrc = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-        }
-        return (
-          <div className="relative left-1/2 z-10 mt-8 w-screen -translate-x-1/2">
-            <p className="mb-2 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-gold/70">
-              Ubicación del evento
-            </p>
-            <div className="overflow-hidden">
-              <iframe
-                key={embedSrc}
-                src={embedSrc}
-                width="100%"
-                height="200"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="Ubicación del evento"
-              />
+        const url = eventSettings.locationUrl.trim();
+
+        // If admin pasted the embed src directly, use it as-is
+        if (url.includes('/maps/embed')) {
+          return (
+            <div className="relative left-1/2 z-10 mt-8 w-screen -translate-x-1/2">
+              <p className="mb-2 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-gold/70">
+                Ubicación del evento
+              </p>
+              <div className="overflow-hidden">
+                <iframe
+                  key={url}
+                  src={url}
+                  width="100%"
+                  height="200"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Ubicación del evento"
+                />
+              </div>
             </div>
+          );
+        }
+
+        // For any other Google Maps link, show it as a clickable link
+        // (regular Google Maps URLs block iframe embedding via X-Frame-Options)
+        return (
+          <div className="relative left-1/2 z-10 mt-8 w-screen -translate-x-1/2 px-6">
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mx-auto flex max-w-sm items-center justify-center gap-2 rounded-xl border border-gold/20 bg-blush/30 px-4 py-3 transition-all hover:border-gold/40 hover:bg-blush/50"
+            >
+              <svg className="h-5 w-5 shrink-0 text-gold" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+              </svg>
+              <span className="flex flex-col">
+                <span className="text-xs font-medium text-slate/80">Ubicación del evento</span>
+                <span className="text-[10px] font-medium text-gold">Ver en Google Maps &rarr;</span>
+              </span>
+            </a>
           </div>
         );
       })()}
