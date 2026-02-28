@@ -49,6 +49,7 @@ export const revelation = pgTable('revelation', {
   language: text('language').notNull(),
   trainingCenter: text('training_center').notNull(),
   entryDate: text('entry_date').notNull(),
+  letterDate: text('letter_date').notNull().default(''),
   pdfText: text('pdf_text').notNull().default(''),
   normalizedPdfText: text('normalized_pdf_text').notNull().default(''),
   isRevealed: boolean('is_revealed').default(false).notNull(),

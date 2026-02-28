@@ -14,6 +14,7 @@ interface RevelationData {
   language: string;
   trainingCenter: string;
   entryDate: string;
+  letterDate: string;
   isRevealed: boolean;
 }
 
@@ -61,6 +62,7 @@ function RevelationPage() {
   const language = data?.language ?? 'Idioma';
   const trainingCenter = data?.trainingCenter ?? 'Ciudad CCM';
   const entryDate = data?.entryDate ?? 'DD de Mes de AAAA';
+  const letterDate = data?.letterDate ?? 'DD de Mes de AAAA';
 
   const isDateExpired = useMemo(() => {
     if (!eventSettings?.openingDate) return true;
@@ -109,7 +111,7 @@ function RevelationPage() {
             {/* Letter body */}
             <div className="mt-6 space-y-4 text-slate">
               <p className="text-right text-sm text-slate/50">
-                1 de mayo de 2026
+                {letterDate}
               </p>
 
               <p className="text-lg text-navy">

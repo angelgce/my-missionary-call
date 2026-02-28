@@ -32,12 +32,13 @@ interface RevelationData {
   language: string;
   trainingCenter: string;
   entryDate: string;
+  letterDate: string;
   pdfText: string | null;
   normalizedPdfText: string | null;
   isRevealed: boolean;
 }
 
-const CALL_LETTER_TEMPLATE = `27 de enero de 2026
+const CALL_LETTER_TEMPLATE = `{{LETTER_DATE}}
 
 Hermana {{MISSIONARY_NAME}}
 {{ADDRESS}}
@@ -1482,6 +1483,7 @@ function Home() {
                   const text = data.normalizedPdfText
                     ? data.normalizedPdfText
                     : CALL_LETTER_TEMPLATE
+                      .replace(/\{\{LETTER_DATE\}\}/g, data.letterDate || '')
                       .replace(/\{\{MISSIONARY_NAME\}\}/g, data.missionaryName || '')
                       .replace(/\{\{ADDRESS\}\}/g, (data.missionaryAddress || '').replace(/\\n/g, '\n'))
                       .replace(/\{\{MISSION_NAME\}\}/g, data.missionName || '')

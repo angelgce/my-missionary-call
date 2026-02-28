@@ -13,6 +13,7 @@ type MissionaryCallData = {
   language: string;
   trainingCenter: string;
   entryDate: string;
+  letterDate: string;
 };
 
 type MissionaryCallDataWithConfidence = MissionaryCallData & {
@@ -23,6 +24,7 @@ type MissionaryCallDataWithConfidence = MissionaryCallData & {
     language: number;
     trainingCenter: number;
     entryDate: number;
+    letterDate: number;
   };
 };
 
@@ -52,6 +54,7 @@ Rules:
 - language: The language they will speak. If not explicitly stated, infer from the mission country.
 - trainingCenter: The MTC/CCM location if mentioned. Empty string if not found.
 - entryDate: The MTC report date if mentioned. Empty string if not found.
+- letterDate: The date at the very top of the letter (the date the letter was written/issued). It usually appears before the missionary's name and address. Format as found in the text (e.g. "27 de enero de 2026"). Empty string if not found.
 - confidence: Object with same keys, each a number 0-100. Use 0 if not found.
 
 If a field cannot be found or inferred, use empty string and confidence 0.
@@ -82,6 +85,7 @@ JSON:`;
       language: 0,
       trainingCenter: 0,
       entryDate: 0,
+      letterDate: 0,
     };
 
     return {
@@ -91,6 +95,7 @@ JSON:`;
       language: parsed.language || '',
       trainingCenter: parsed.trainingCenter || '',
       entryDate: parsed.entryDate || '',
+      letterDate: parsed.letterDate || '',
       confidence: parsed.confidence
         ? {
             missionaryName: Number(parsed.confidence.missionaryName) || 0,
@@ -99,6 +104,7 @@ JSON:`;
             language: Number(parsed.confidence.language) || 0,
             trainingCenter: Number(parsed.confidence.trainingCenter) || 0,
             entryDate: Number(parsed.confidence.entryDate) || 0,
+            letterDate: Number(parsed.confidence.letterDate) || 0,
           }
         : defaultConfidence,
     };

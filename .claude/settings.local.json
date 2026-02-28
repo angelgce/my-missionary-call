@@ -12,7 +12,8 @@
       "Bash(ls *)",
       "Bash(ps:*)",
       "Bash(node:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(xargs ls:*)"
     ]
   }
 }

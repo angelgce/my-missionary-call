@@ -21,6 +21,7 @@ export class RevelationService {
         language: rev.language,
         trainingCenter: rev.trainingCenter,
         entryDate: rev.entryDate,
+        letterDate: rev.letterDate,
       },
       this.encryptionKey,
     );
@@ -34,6 +35,7 @@ export class RevelationService {
       language: '???',
       trainingCenter: '???',
       entryDate: '???',
+      letterDate: '???',
       pdfText: null,
       openingDate: rev.openingDate,
       locationAddress: rev.locationAddress,
@@ -93,6 +95,7 @@ export class RevelationService {
         language: rev.language,
         trainingCenter: rev.trainingCenter,
         entryDate: rev.entryDate,
+        letterDate: rev.letterDate,
       },
       this.encryptionKey,
     );
@@ -106,6 +109,7 @@ export class RevelationService {
       language: '••••••••',
       trainingCenter: '••••••••',
       entryDate: '••••••••',
+      letterDate: '••••••••',
       hasData: true,
       openingDate: rev.openingDate,
       locationAddress: rev.locationAddress,
@@ -122,6 +126,7 @@ export class RevelationService {
     language: string;
     trainingCenter: string;
     entryDate: string;
+    letterDate: string;
     pdfText: string;
     normalizedPdfText?: string;
   }) {
@@ -133,6 +138,7 @@ export class RevelationService {
         language: data.language,
         trainingCenter: data.trainingCenter,
         entryDate: data.entryDate,
+        letterDate: data.letterDate,
       },
       this.encryptionKey,
     );
@@ -150,6 +156,7 @@ export class RevelationService {
     language: string;
     trainingCenter: string;
     entryDate: string;
+    letterDate: string;
   }) {
     const encrypted = await encryptRevelation(data, this.encryptionKey);
     return this.repo.upsert(encrypted);
@@ -221,6 +228,7 @@ export class RevelationService {
         language: rev.language,
         trainingCenter: rev.trainingCenter,
         entryDate: rev.entryDate,
+        letterDate: rev.letterDate,
       },
       this.encryptionKey,
     );

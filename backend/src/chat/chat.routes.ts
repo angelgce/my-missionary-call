@@ -43,6 +43,7 @@ export const chatRoutes = new Hono<{ Bindings: Env }>()
             language: rev.language,
             trainingCenter: rev.trainingCenter,
             entryDate: rev.entryDate,
+            letterDate: rev.letterDate,
           },
           c.env.ENCRYPTION_KEY,
         );

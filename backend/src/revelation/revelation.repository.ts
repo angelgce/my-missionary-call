@@ -18,6 +18,7 @@ export class RevelationRepository {
     language: string;
     trainingCenter: string;
     entryDate: string;
+    letterDate: string;
     pdfText?: string;
     normalizedPdfText?: string;
     isRevealed?: boolean;

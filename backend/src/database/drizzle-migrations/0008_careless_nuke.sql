@@ -1,0 +1,1 @@
+ALTER TABLE "revelation" ADD COLUMN "letter_date" text DEFAULT '' NOT NULL;

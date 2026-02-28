@@ -66,6 +66,7 @@ const SENSITIVE_FIELDS = [
   'language',
   'trainingCenter',
   'entryDate',
+  'letterDate',
 ] as const;
 
 type SensitiveFields = (typeof SENSITIVE_FIELDS)[number];

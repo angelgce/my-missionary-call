@@ -23,6 +23,7 @@ const updateSchema = z.object({
   language: z.string().min(1),
   trainingCenter: z.string().min(1),
   entryDate: z.string().min(1),
+  letterDate: z.string().default(''),
 });
 
 function getService(env: Env) {
@@ -140,7 +141,7 @@ export const revelationRoutes = new Hono<{ Bindings: Env }>()
 
         // Save encrypted to DB (including raw PDF text)
         const service = getService(c.env);
-        await service.updateFromPdf({ ...extracted, missionaryAddress: extracted.missionaryAddress || '', pdfText: text });
+        await service.updateFromPdf({ ...extracted, missionaryAddress: extracted.missionaryAddress || '', letterDate: extracted.letterDate || '', pdfText: text });
 
         // Only return missionaryName, keep the rest hidden
         return c.json({
@@ -184,6 +185,7 @@ export const revelationRoutes = new Hono<{ Bindings: Env }>()
         language: z.string().default(''),
         trainingCenter: z.string().default(''),
         entryDate: z.string().default(''),
+        letterDate: z.string().default(''),
         pdfText: z.string().min(1),
       }),
     ),

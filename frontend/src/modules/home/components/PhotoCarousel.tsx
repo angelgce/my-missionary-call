@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 
 import api from '@/core/services/api';
 
@@ -121,6 +122,7 @@ function PhotoCarousel() {
   if (totalSlides === 0) return null;
 
   return (
+    <>
     <div className="relative z-10 mx-auto mb-6 w-full max-w-lg tablet:max-w-2xl tablet:mb-8">
       {/* Carousel container */}
       <div className="relative flex items-center justify-center">
@@ -208,15 +210,17 @@ function PhotoCarousel() {
         ))}
       </div>
 
-      {/* Modal */}
-      {selectedPhoto && (
+    </div>
+
+      {/* Modal — rendered via portal to escape parent stacking context */}
+      {selectedPhoto && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4"
           onClick={() => setSelectedPhoto(null)}
         >
           <button
             onClick={() => setSelectedPhoto(null)}
-            className="absolute right-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-navy/70 shadow-md transition-colors hover:bg-white hover:text-navy"
+            className="absolute right-4 top-4 z-[100] flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-navy/70 shadow-md transition-colors hover:bg-white hover:text-navy"
             aria-label="Cerrar"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -234,9 +238,10 @@ function PhotoCarousel() {
               className="max-h-[55vh] max-w-[65vw] rounded object-contain"
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }
 

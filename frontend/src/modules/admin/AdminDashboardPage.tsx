@@ -37,7 +37,7 @@ interface PredictionItem {
   createdAt: string;
 }
 
-type ExtractedField = 'missionaryName' | 'missionaryAddress' | 'missionName' | 'language' | 'trainingCenter' | 'entryDate';
+type ExtractedField = 'missionaryName' | 'missionaryAddress' | 'missionName' | 'language' | 'trainingCenter' | 'entryDate' | 'letterDate';
 
 interface ExtractedData {
   missionaryName: string;
@@ -46,6 +46,7 @@ interface ExtractedData {
   language: string;
   trainingCenter: string;
   entryDate: string;
+  letterDate: string;
   confidence?: Record<ExtractedField, number>;
 }
 
@@ -525,6 +526,7 @@ function AdminDashboardPage() {
                 <p>Idioma: ••••••••</p>
                 <p>Centro de Capacitación: ••••••••</p>
                 <p>Fecha de Entrada: ••••••••</p>
+                <p>Fecha de la Carta: ••••••••</p>
               </div>
             )}
           </div>
@@ -605,6 +607,7 @@ function AdminDashboardPage() {
                   { key: 'language' as const, label: 'Idioma' },
                   { key: 'trainingCenter' as const, label: 'Centro de Capacitación' },
                   { key: 'entryDate' as const, label: 'Fecha de Entrada' },
+                  { key: 'letterDate' as const, label: 'Fecha de la Carta' },
                 ].map(({ key, label }) => (
                   <div key={key}>
                     <div className="mb-1 flex items-center justify-between">
