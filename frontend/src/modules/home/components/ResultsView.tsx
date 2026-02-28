@@ -62,13 +62,17 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
   const renderMedalIcon = (index: number, large?: boolean) => {
     const color = MEDAL_COLORS[index];
     const size = large
-      ? 'h-14 w-14 text-lg'
+      ? 'h-14 w-14 text-lg tablet:h-16 tablet:w-16 tablet:text-xl desktop:h-20 desktop:w-20 desktop:text-2xl'
       : 'h-9 w-9 text-sm tablet:h-10 tablet:w-10';
+
+    const shadow = large
+      ? `0 4px 16px ${color}40`
+      : `0 2px 8px ${color}30`;
 
     return (
       <div
         className={`flex shrink-0 items-center justify-center rounded-full font-bold text-white ${size}`}
-        style={{ backgroundColor: color }}
+        style={{ backgroundColor: color, boxShadow: shadow }}
       >
         {MEDAL_LABELS[index]}
       </div>
@@ -252,19 +256,19 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
         </div>
 
         {/* Hero header */}
-        <div className="mb-8 text-center">
-          <p className="font-serif text-base italic text-slate/70 tablet:text-lg">
+        <div className="mb-8 text-center tablet:mb-10 desktop:mb-12">
+          <p className="font-serif text-base italic text-slate/70 tablet:text-lg desktop:text-xl">
             Ha sido llamada a servir en la
           </p>
-          <h1 className="mt-2 font-serif text-3xl font-bold text-navy tablet:text-5xl">
+          <h1 className="mt-2 font-serif text-3xl font-bold text-navy tablet:text-5xl desktop:text-6xl">
             {destination.missionName}
           </h1>
         </div>
 
-        <DecorativeDivider className="my-8" />
+        <DecorativeDivider className="my-8 tablet:my-10 desktop:my-12" />
 
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3 tablet:gap-4">
+        <div className="grid grid-cols-3 gap-3 tablet:gap-5 desktop:gap-6">
           {renderStatCard(ranked.length, 'Predicciones', 100)}
           {renderStatCard(uniqueCountries, 'Paises', 200)}
           {renderStatCard(
@@ -274,11 +278,11 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
           )}
         </div>
 
-        <DecorativeDivider className="my-8" />
+        <DecorativeDivider className="my-8 tablet:my-10 desktop:my-12" />
 
         {/* Map card */}
         <div
-          className="animate-slide-up overflow-hidden rounded-2xl border border-rose-soft bg-warm-white p-2 tablet:p-3"
+          className="animate-slide-up overflow-hidden rounded-2xl border border-rose-soft bg-warm-white p-2 shadow-sm tablet:p-3 desktop:p-4"
           style={{ animationDelay: '300ms', animationFillMode: 'both' }}
         >
           <Suspense fallback={null}>
@@ -297,7 +301,7 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
           </Suspense>
         </div>
 
-        <DecorativeDivider className="my-8" />
+        <DecorativeDivider className="my-8 tablet:my-10 desktop:my-12" />
 
         {/* Winner spotlight */}
         {winner && (
@@ -306,7 +310,7 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
 
             {/* Runner-ups */}
             {runnerUps.length > 0 && (
-              <div className="mt-4 grid grid-cols-1 gap-4 tablet:grid-cols-2">
+              <div className="mt-5 grid grid-cols-1 gap-4 tablet:mt-6 tablet:grid-cols-2 tablet:gap-5 desktop:mt-8 desktop:gap-6">
                 {runnerUps.map((p, i) => renderRunnerUp(p, i))}
               </div>
             )}
@@ -316,19 +320,19 @@ function ResultsView({ predictions, destination, onBack }: ResultsViewProps) {
         {/* Ranking list */}
         {rest.length > 0 && (
           <>
-            <DecorativeDivider className="my-8" />
+            <DecorativeDivider className="my-8 tablet:my-10 desktop:my-12" />
 
-            <h3 className="mb-4 text-center font-serif text-lg font-bold text-navy">
+            <h3 className="mb-5 text-center font-serif text-lg font-bold text-navy tablet:mb-6 tablet:text-xl desktop:text-2xl">
               Todas las predicciones
             </h3>
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 gap-3 tablet:gap-3.5 desktop:grid-cols-2 desktop:gap-4">
               {rest.map((p, i) => renderRankingRow(p, i))}
             </div>
           </>
         )}
 
         {/* Bottom spacer */}
-        <div className="h-8" />
+        <div className="h-10 tablet:h-14 desktop:h-16" />
       </div>
     </PageContainer>
   );
