@@ -104,6 +104,7 @@ function Home() {
   const marqueeResumeTimer = useRef<ReturnType<typeof setTimeout>>();
   const adviceSectionRef = useRef<HTMLDivElement>(null);
   const mapSectionRef = useRef<HTMLDivElement>(null);
+  const locationMapRef = useRef<HTMLDivElement>(null);
 
   // Redux selectors
   const dispatch = useAppDispatch();
@@ -361,6 +362,15 @@ function Home() {
     setShowAdviceHint(true);
     adviceSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
+
+  const handleScrollToLocationMap = () => {
+    locationMapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const handleScrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
 
   const handleAdviceSubmit = async () => {
     const newErrors = {
@@ -992,28 +1002,26 @@ function Home() {
                   )}
                   {eventSettings?.locationAddress && (
                     eventSettings.locationUrl ? (
-                      <a
-                        href={eventSettings.locationUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group flex items-center gap-1.5 rounded-lg border border-gold/20 bg-blush/30 px-3 py-2 transition-all hover:border-gold/40 hover:bg-blush/50"
+                      <button
+                        onClick={handleScrollToLocationMap}
+                        className="group flex w-full flex-col items-center gap-1 rounded-lg border border-gold/20 bg-blush/30 px-3 py-2 transition-all hover:border-gold/40 hover:bg-blush/50"
                       >
-                        <svg
-                          className="h-4 w-4 shrink-0 animate-bounce-pin text-gold"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                        </svg>
-                        <span className="flex flex-col">
+                        <span className="flex items-center gap-1.5">
+                          <svg
+                            className="h-4 w-4 shrink-0 animate-bounce-pin text-gold"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                          </svg>
                           <span className="text-[11px] leading-tight text-slate/70 group-hover:text-slate">
                             {eventSettings.locationAddress}
                           </span>
-                          <span className="text-[9px] font-medium text-gold group-hover:text-gold-dark">
-                            Toca para ver en mapa &rarr;
-                          </span>
                         </span>
-                      </a>
+                        <span className="text-[9px] font-medium text-gold group-hover:text-gold-dark">
+                          Toca para ver en mapa &darr;
+                        </span>
+                      </button>
                     ) : (
                       <p className="flex items-center gap-1 text-[11px] text-slate/60">
                         <svg
@@ -1029,14 +1037,12 @@ function Home() {
                     )
                   )}
                   {eventSettings?.locationUrl && !eventSettings?.locationAddress && (
-                    <a
-                      href={eventSettings.locationUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={handleScrollToLocationMap}
                       className="inline-block text-[11px] font-medium text-gold/80 underline decoration-gold/30 underline-offset-2 transition-colors hover:text-gold"
                     >
-                      Ver en Google Maps
-                    </a>
+                      Ver ubicación del evento &darr;
+                    </button>
                   )}
                   {!eventSettings?.openingDate && !eventSettings?.locationAddress && (
                     <p className="text-[10px] text-slate/35">
@@ -1942,34 +1948,50 @@ function Home() {
       {eventSettings?.locationUrl && (() => {
         const url = eventSettings.locationUrl.trim();
 
-        // If admin pasted the embed src directly, use it as-is
-        if (url.includes('/maps/embed')) {
+        // If admin pasted the embed src directly, use it in an iframe
+        if (url.includes('/maps/embed') || url.includes('google.com/maps')) {
           return (
-            <div className="relative left-1/2 z-10 mt-8 w-screen -translate-x-1/2">
+            <div ref={locationMapRef} className="relative left-1/2 z-10 mt-8 w-screen -translate-x-1/2">
               <p className="mb-2 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-gold/70">
                 Ubicación del evento
               </p>
               <div className="overflow-hidden">
-                <iframe
-                  key={url}
-                  src={url}
-                  width="100%"
-                  height="200"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Ubicación del evento"
-                />
+                {url.includes('/maps/embed') ? (
+                  <iframe
+                    key={url}
+                    src={url}
+                    width="100%"
+                    height="250"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Ubicación del evento"
+                  />
+                ) : (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mx-auto flex max-w-sm items-center justify-center gap-2 rounded-xl border border-gold/20 bg-blush/30 px-4 py-3 transition-all hover:border-gold/40 hover:bg-blush/50"
+                  >
+                    <svg className="h-5 w-5 shrink-0 text-gold" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                    </svg>
+                    <span className="flex flex-col">
+                      <span className="text-xs font-medium text-slate/80">Ubicación del evento</span>
+                      <span className="text-[10px] font-medium text-gold">Ver en Google Maps &rarr;</span>
+                    </span>
+                  </a>
+                )}
               </div>
             </div>
           );
         }
 
-        // For any other Google Maps link, show it as a clickable link
-        // (regular Google Maps URLs block iframe embedding via X-Frame-Options)
+        // For non-Google Maps links, show as clickable link
         return (
-          <div className="relative left-1/2 z-10 mt-8 w-screen -translate-x-1/2 px-6">
+          <div ref={locationMapRef} className="relative left-1/2 z-10 mt-8 w-screen -translate-x-1/2 px-6">
             <a
               href={url}
               target="_blank"
@@ -1987,6 +2009,16 @@ function Home() {
           </div>
         );
       })()}
+      {/* Back to top */}
+      <button
+        onClick={handleScrollToTop}
+        className="mx-auto mt-6 mb-4 flex items-center gap-1.5 rounded-full border border-gold/20 bg-blush/30 px-5 py-2.5 text-[11px] font-medium text-gold transition-all hover:border-gold/40 hover:bg-blush/50"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="18 15 12 9 6 15" />
+        </svg>
+        Volver arriba
+      </button>
     </PageContainer>
   );
 }
