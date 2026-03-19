@@ -156,6 +156,60 @@ function AdminDashboardPage() {
   const paginatedAdvices = sortedAdvices.slice((advicesPage - 1) * PAGE_SIZE, advicesPage * PAGE_SIZE);
 
   // Event handlers
+  const handlePrintPredictions = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Predicciones</title>
+        <style>
+          body { font-family: Georgia, serif; padding: 40px; color: #1a1a2e; }
+          h1 { text-align: center; font-size: 24px; margin-bottom: 4px; }
+          .subtitle { text-align: center; font-size: 12px; color: #888; margin-bottom: 30px; }
+          table { width: 100%; border-collapse: collapse; font-size: 13px; }
+          th { text-align: left; padding: 8px 10px; border-bottom: 2px solid #1a1a2e; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+          td { padding: 8px 10px; border-bottom: 1px solid #e0d6cc; }
+          tr:last-child td { border-bottom: none; }
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        <h1>Predicciones</h1>
+        <p class="subtitle">${sortedPredictions.length} predicci${sortedPredictions.length === 1 ? 'ón' : 'ones'} — Impreso el ${new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>País</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sortedPredictions.map((p) => `
+              <tr>
+                <td>${p.guestName}</td>
+                <td>${p.country}</td>
+                <td>${p.state || '—'}</td>
+                <td>${new Date(p.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
+
   const fetchData = async () => {
     try {
       const [revRes, predRes] = await Promise.all([
@@ -803,25 +857,34 @@ function AdminDashboardPage() {
               Predicciones ({predictions.length})
             </h2>
             {predictions.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowPredictions((prev) => !prev)}
-                className="flex items-center gap-2 rounded-full border border-rose-soft px-4 py-2 text-sm text-slate transition-colors hover:bg-rose-soft"
-              >
-                {showPredictions ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                    <line x1="1" y1="1" x2="23" y2="23" />
-                  </svg>
-                )}
-                {showPredictions ? 'Ocultar' : 'Mostrar'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handlePrintPredictions}
+                  className="rounded-full border border-gold/40 px-4 py-2 text-sm text-navy transition-colors hover:bg-gold/10"
+                >
+                  Imprimir
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPredictions((prev) => !prev)}
+                  className="flex items-center gap-2 rounded-full border border-rose-soft px-4 py-2 text-sm text-slate transition-colors hover:bg-rose-soft"
+                >
+                  {showPredictions ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  )}
+                  {showPredictions ? 'Ocultar' : 'Mostrar'}
+                </button>
+              </div>
             )}
           </div>
 

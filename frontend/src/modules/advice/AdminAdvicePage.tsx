@@ -49,6 +49,49 @@ function AdminAdvicePage() {
     return () => clearInterval(interval);
   }, [isAuthenticated, navigate]);
 
+  // Event handlers
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Buzón de Consejos</title>
+        <style>
+          body { font-family: Georgia, serif; padding: 40px; color: #1a1a2e; }
+          h1 { text-align: center; font-size: 24px; margin-bottom: 4px; }
+          .subtitle { text-align: center; font-size: 12px; color: #888; margin-bottom: 30px; }
+          .advice { border-bottom: 1px solid #e0d6cc; padding: 16px 0; }
+          .advice:last-child { border-bottom: none; }
+          .name { font-weight: bold; font-size: 16px; }
+          .text { margin-top: 6px; font-size: 14px; color: #444; white-space: pre-wrap; }
+          .date { font-size: 11px; color: #999; margin-top: 4px; }
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        <h1>Buzón de Consejos</h1>
+        <p class="subtitle">${advices.length} consejo${advices.length === 1 ? '' : 's'} — Impreso el ${new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        ${advices.map((a) => `
+          <div class="advice">
+            <div class="name">${a.guestName}</div>
+            <div class="text">${a.advice}</div>
+            <div class="date">${new Date(a.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+          </div>
+        `).join('')}
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
+
   return (
     <PageContainer>
       <div className="animate-fade-in">
@@ -61,12 +104,21 @@ function AdminAdvicePage() {
               Buzón de Consejos
             </h1>
           </div>
-          <button
-            onClick={() => navigate('/admin/dashboard')}
-            className="rounded-full border border-rose-soft px-4 py-2 text-sm text-slate transition-colors hover:bg-rose-soft"
-          >
-            Volver al Dashboard
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handlePrint}
+              disabled={advices.length === 0}
+              className="rounded-full border border-gold/40 px-4 py-2 text-sm text-navy transition-colors hover:bg-gold/10 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Imprimir
+            </button>
+            <button
+              onClick={() => navigate('/admin/dashboard')}
+              className="rounded-full border border-rose-soft px-4 py-2 text-sm text-slate transition-colors hover:bg-rose-soft"
+            >
+              Volver al Dashboard
+            </button>
+          </div>
         </div>
 
         <DecorativeDivider className="my-6" />
