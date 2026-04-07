@@ -64,6 +64,21 @@ export const blogPostImages = pgTable('blog_post_images', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+export const diaryEntries = pgTable('diary_entries', {
+  id: text('id').primaryKey(),
+  content: text('content').notNull().default(''),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const diaryEntryImages = pgTable('diary_entry_images', {
+  id: text('id').primaryKey(),
+  entryId: text('entry_id').notNull().references(() => diaryEntries.id, { onDelete: 'cascade' }),
+  imageKey: text('image_key').notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export const revelation = pgTable('revelation', {
   id: uuid('id').primaryKey().defaultRandom(),
   missionaryName: text('missionary_name').notNull().default(''),

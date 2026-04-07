@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 
@@ -473,12 +473,20 @@ function AdminDashboardPage() {
               Dashboard
             </h1>
           </div>
-          <button
-            onClick={handleLogout}
-            className="rounded-full border border-rose-soft px-4 py-2 text-sm text-slate transition-colors hover:bg-rose-soft"
-          >
-            Cerrar Sesión
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/admin/diario"
+              className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-blush/30 px-4 py-2 text-sm font-medium text-gold transition-colors hover:border-gold/50 hover:bg-blush/50"
+            >
+              📓 Diario
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="rounded-full border border-rose-soft px-4 py-2 text-sm text-slate transition-colors hover:bg-rose-soft"
+            >
+              Cerrar Sesión
+            </button>
+          </div>
         </div>
 
         <DecorativeDivider className="my-4 tablet:my-6" />

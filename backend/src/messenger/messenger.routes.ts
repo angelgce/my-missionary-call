@@ -4,6 +4,8 @@ import type { Env } from '../worker';
 import { getDb } from '../lib/db';
 import { BlogRepository } from '../blog/blog.repository';
 import { BlogService, R2Config } from '../blog/blog.service';
+import { DiaryRepository } from '../diary/diary.repository';
+import { DiaryService } from '../diary/diary.service';
 import { MessengerService } from './messenger.service';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,6 +56,73 @@ function buildBlogService(env: Env): BlogService {
   return new BlogService(repo, r2);
 }
 
+function buildDiaryService(env: Env): DiaryService {
+  const db = getDb(env.DATABASE_URL);
+  const repo = new DiaryRepository(db);
+  const r2 = {
+    endpoint: env.R2_ENDPOINT,
+    bucketName: env.R2_BUCKET_NAME,
+    accessKeyId: env.R2_ACCESS_KEY_ID,
+    secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+  };
+  return new DiaryService(repo, r2);
+}
+
+/**
+ * Resolve an entity ID to either a blog post or a diary entry.
+ * Returns { kind, title } or null if not found in either table.
+ */
+async function resolveEntity(
+  env: Env,
+  id: string
+): Promise<{ kind: 'blog' | 'diary'; title: string } | null> {
+  const blog = buildBlogService(env);
+  const post = await blog.getAdminById(id);
+  if (post) return { kind: 'blog', title: post.title };
+
+  const diary = buildDiaryService(env);
+  const entry = await diary.getEntryWithImages(id);
+  if (entry) {
+    const date = new Date(entry.createdAt).toLocaleDateString('es-MX', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    return { kind: 'diary', title: `Diario ${date}` };
+  }
+  return null;
+}
+
+/**
+ * Resolve an image ID to either a blog gallery image or a diary image.
+ */
+async function resolveImageKind(
+  env: Env,
+  imageId: string
+): Promise<'blog' | 'diary' | null> {
+  const db = getDb(env.DATABASE_URL);
+  const { blogPostImages, diaryEntryImages } = await import(
+    '../database/drizzle-schema/schema.schema'
+  );
+  const { eq } = await import('drizzle-orm');
+
+  const blogRows = await db
+    .select({ id: blogPostImages.id })
+    .from(blogPostImages)
+    .where(eq(blogPostImages.id, imageId))
+    .limit(1);
+  if (blogRows.length > 0) return 'blog';
+
+  const diaryRows = await db
+    .select({ id: diaryEntryImages.id })
+    .from(diaryEntryImages)
+    .where(eq(diaryEntryImages.id, imageId))
+    .limit(1);
+  if (diaryRows.length > 0) return 'diary';
+
+  return null;
+}
+
 /**
  * Parse the admin map from MESSENGER_ADMINS env var.
  * Format: "psid1:Name1,psid2:Name2"
@@ -98,20 +167,24 @@ Contenido del post.
 Puede tener varios párrafos.
 
 ${SEP}
-📋 GESTIÓN
-🔹 /list — últimos 5 posts
-🔹 /publish <id> — hacer público
-🔹 /unpublish <id> — volver borrador
-🔹 /delete <id> — eliminar post
+📓 DIARIO PRIVADO (solo tú lo ves)
+/diario
+Lo que escribas hoy...
 
 ${SEP}
-📷 IMÁGENES
+📋 GESTIÓN
+🔹 /list — posts del blog
+🔹 /dlist — entradas del diario
+🔹 /publish <id> — hacer público (blog)
+🔹 /unpublish <id> — volver borrador (blog)
+🔹 /delete <id> — eliminar (blog o diario)
+
+${SEP}
+📷 IMÁGENES (funcionan en blog o diario)
 🔹 /image <id> start — abrir modo galería
 🔹 /image <id> end — cerrar (o /end)
-🔹 /images <id> — ver imágenes del post
+🔹 /images <id> — ver imágenes
 🔹 /rmimg <imageId> — eliminar imagen
-
-Las fotos rotan como portada automáticamente.
 
 ${SEP}
 🛟 OTROS
@@ -127,6 +200,7 @@ const STATE_TTL_SECONDS = 60 * 60; // 1 hour
 interface ImageState {
   postId: string;
   mode: 'gallery';
+  kind: 'blog' | 'diary';
 }
 
 function stateKey(psid: string): string {
@@ -151,6 +225,39 @@ async function setState(env: Env, psid: string, state: ImageState): Promise<void
 
 async function clearState(env: Env, psid: string): Promise<void> {
   await env.KV.delete(stateKey(psid));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pending confirmation state (for "do you want to publish all?" type prompts)
+// ─────────────────────────────────────────────────────────────────────────────
+const PENDING_TTL_SECONDS = 5 * 60; // 5 minutes
+
+interface PendingAction {
+  action: 'publish_all';
+}
+
+function pendingKey(psid: string): string {
+  return `messenger:pending:${psid}`;
+}
+
+async function getPending(env: Env, psid: string): Promise<PendingAction | null> {
+  const raw = await env.KV.get(pendingKey(psid));
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as PendingAction;
+  } catch {
+    return null;
+  }
+}
+
+async function setPending(env: Env, psid: string, action: PendingAction): Promise<void> {
+  await env.KV.put(pendingKey(psid), JSON.stringify(action), {
+    expirationTtl: PENDING_TTL_SECONDS,
+  });
+}
+
+async function clearPending(env: Env, psid: string): Promise<void> {
+  await env.KV.delete(pendingKey(psid));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -203,46 +310,61 @@ async function handleTextCommand(
     return;
   }
 
-  // /images <id> — list gallery
+  // /images <id> — list gallery (works for blog or diary)
   if (lower.startsWith('/images')) {
     const id = trimmed.slice('/images'.length).trim();
     if (!id) {
       await messenger.sendText(senderPsid, '❗ Uso: /images <id>');
       return;
     }
-    const post = await blog.getAdminById(id);
-    if (!post) {
-      await messenger.sendText(senderPsid, '❌ Post no encontrado.');
+    const entity = await resolveEntity(env, id);
+    if (!entity) {
+      await messenger.sendText(senderPsid, '❌ ID no encontrado (ni en blog ni en diario).');
       return;
     }
-    if (post.gallery.length === 0) {
+
+    let gallery: { id: string }[] = [];
+    if (entity.kind === 'blog') {
+      const post = await blog.getAdminById(id);
+      gallery = post?.gallery ?? [];
+    } else {
+      const diary = buildDiaryService(env);
+      const entry = await diary.getEntryWithImages(id);
+      gallery = entry?.gallery ?? [];
+    }
+
+    if (gallery.length === 0) {
       await messenger.sendText(
         senderPsid,
-        `🖼 "${post.title}"\n${SEP}\n\nSin imágenes aún.\n\nUsa /image ${id} start para agregar.`
+        `🖼 "${entity.title}"\n${SEP}\n\nSin imágenes aún.\n\nUsa /image ${id} start para agregar.`
       );
       return;
     }
-    const lines = post.gallery.map(
-      (img, i) => `${i + 1}. 🆔 ${img.id}`
-    );
+    const lines = gallery.map((img, i) => `${i + 1}. 🆔 ${img.id}`);
     await messenger.sendText(
       senderPsid,
-      `🖼 IMÁGENES DE "${post.title}"\n${SEP}\n\n${lines.join('\n')}\n\nElimina con:\n/rmimg <imageId>`
+      `🖼 IMÁGENES DE "${entity.title}"\n${SEP}\n\n${lines.join('\n')}\n\nElimina con:\n/rmimg <imageId>`
     );
     return;
   }
 
-  // /rmimg <imageId> — remove image
+  // /rmimg <imageId> — remove image (works for blog or diary)
   if (lower.startsWith('/rmimg')) {
     const imageId = trimmed.slice('/rmimg'.length).trim();
     if (!imageId) {
       await messenger.sendText(senderPsid, '❗ Uso: /rmimg <imageId>');
       return;
     }
-    const removed = await blog.removeImage(imageId);
-    if (!removed) {
+    const kind = await resolveImageKind(env, imageId);
+    if (!kind) {
       await messenger.sendText(senderPsid, '❌ Imagen no encontrada.');
       return;
+    }
+    if (kind === 'blog') {
+      await blog.removeImage(imageId);
+    } else {
+      const diary = buildDiaryService(env);
+      await diary.removeImage(imageId);
     }
     await messenger.sendText(senderPsid, `🗑 Imagen eliminada.`);
     return;
@@ -300,22 +422,79 @@ async function handleTextCommand(
     return;
   }
 
-  // /publish <id>
+  // /publish [id] — smart: with no id, behaves based on number of drafts
   if (lower.startsWith('/publish')) {
     const id = trimmed.slice('/publish'.length).trim();
-    if (!id) {
-      await messenger.sendText(senderPsid, '❗ Uso: /publish <id>');
+
+    if (id) {
+      // Explicit ID — publish that one
+      const updated = await blog.updatePost(id, { isPublished: true });
+      if (!updated) {
+        await messenger.sendText(senderPsid, '❌ Post no encontrado.');
+        return;
+      }
+      await messenger.sendText(
+        senderPsid,
+        `🚀 PUBLICADO\n${SEP}\n\n✅ "${updated.title}"\n\nYa es visible en /blog`
+      );
       return;
     }
-    const updated = await blog.updatePost(id, { isPublished: true });
-    if (!updated) {
-      await messenger.sendText(senderPsid, '❌ Post no encontrado.');
+
+    // No ID → check drafts
+    const all = await blog.listAdmin();
+    const drafts = all.filter((p) => !p.isPublished);
+
+    if (drafts.length === 0) {
+      await messenger.sendText(
+        senderPsid,
+        `📭 SIN BORRADORES\n${SEP}\n\nNo hay posts pendientes de publicar.`
+      );
       return;
     }
+
+    if (drafts.length === 1) {
+      const only = drafts[0];
+      const updated = await blog.updatePost(only.id, { isPublished: true });
+      await messenger.sendText(
+        senderPsid,
+        `🚀 PUBLICADO\n${SEP}\n\n✅ "${updated?.title}"\n\nEra el único borrador.\nYa es visible en /blog`
+      );
+      return;
+    }
+
+    // Multiple drafts → list and ask
+    const lines = drafts.map((p, i) => `${i + 1}. ${p.title}\n   🆔 ${p.id}`);
+    await setPending(env, senderPsid, { action: 'publish_all' });
     await messenger.sendText(
       senderPsid,
-      `🚀 PUBLICADO\n${SEP}\n\n✅ "${updated.title}"\n\nYa es visible en /blog`
+      `📝 BORRADORES PENDIENTES (${drafts.length})\n${SEP}\n\n${lines.join('\n\n')}\n\n${SEP}\n¿Publicar todos?\n\n✅ Responde *si* para publicar todos\n📌 O envía /publish <id> para uno solo`
     );
+    return;
+  }
+
+  // "si" / "sí" — confirm pending action
+  if (lower === 'si' || lower === 'sí') {
+    const pending = await getPending(env, senderPsid);
+    if (!pending) {
+      await messenger.sendText(senderPsid, 'ℹ️ No hay nada pendiente que confirmar.');
+      return;
+    }
+    if (pending.action === 'publish_all') {
+      await clearPending(env, senderPsid);
+      const all = await blog.listAdmin();
+      const drafts = all.filter((p) => !p.isPublished);
+      let count = 0;
+      for (const d of drafts) {
+        await blog.updatePost(d.id, { isPublished: true });
+        count++;
+      }
+      await messenger.sendText(
+        senderPsid,
+        `🚀 PUBLICADOS\n${SEP}\n\n✅ ${count} post${count === 1 ? '' : 's'} publicados.\nYa son visibles en /blog`
+      );
+      return;
+    }
+    await clearPending(env, senderPsid);
     return;
   }
 
@@ -338,22 +517,32 @@ async function handleTextCommand(
     return;
   }
 
-  // /delete <id>
+  // /delete <id> — works for blog or diary
   if (lower.startsWith('/delete')) {
     const id = trimmed.slice('/delete'.length).trim();
     if (!id) {
       await messenger.sendText(senderPsid, '❗ Uso: /delete <id>');
       return;
     }
-    const deleted = await blog.deletePost(id);
-    if (!deleted) {
-      await messenger.sendText(senderPsid, '❌ Post no encontrado.');
+    const entity = await resolveEntity(env, id);
+    if (!entity) {
+      await messenger.sendText(senderPsid, '❌ ID no encontrado.');
       return;
     }
-    await messenger.sendText(
-      senderPsid,
-      `🗑 ELIMINADO\n${SEP}\n\n"${deleted.title}"\n(También se borraron sus imágenes)`
-    );
+    if (entity.kind === 'blog') {
+      const deleted = await blog.deletePost(id);
+      await messenger.sendText(
+        senderPsid,
+        `🗑 POST ELIMINADO\n${SEP}\n\n"${deleted?.title}"\n(También sus imágenes)`
+      );
+    } else {
+      const diary = buildDiaryService(env);
+      await diary.deleteEntry(id);
+      await messenger.sendText(
+        senderPsid,
+        `🗑 ENTRADA DEL DIARIO ELIMINADA\n${SEP}\n\n${entity.title}\n(También sus imágenes)`
+      );
+    }
     return;
   }
 
@@ -383,24 +572,23 @@ async function handleTextCommand(
     return;
   }
 
-  // /image <id> start | /image <id> end
-  if (lower.startsWith('/image')) {
+  // /image <id> start | /image <id> end — works for blog or diary
+  if (lower.startsWith('/image') && !lower.startsWith('/images')) {
     const rest = trimmed.slice('/image'.length).trim();
-    // Parse: "<id> start" or "<id> end"
     const match = rest.match(/^(\S+)(?:\s+(start|end|stop))?$/i);
     if (!match) {
       await messenger.sendText(
         senderPsid,
-        '❗ Uso:\n/image <id> start  → inicia modo galería\n/image <id> end    → cierra modo galería'
+        '❗ Uso:\n/image <id> start  → inicia modo galería\n/image <id> end    → cierra (o /end)'
       );
       return;
     }
     const id = match[1];
     const action = (match[2] || 'start').toLowerCase();
 
-    const post = await blog.getAdminById(id);
-    if (!post) {
-      await messenger.sendText(senderPsid, '❌ Post no encontrado.');
+    const entity = await resolveEntity(env, id);
+    if (!entity) {
+      await messenger.sendText(senderPsid, '❌ ID no encontrado (ni en blog ni en diario).');
       return;
     }
 
@@ -408,16 +596,73 @@ async function handleTextCommand(
       await clearState(env, senderPsid);
       await messenger.sendText(
         senderPsid,
-        `✅ MODO CERRADO\n${SEP}\n\n"${post.title}"`
+        `✅ MODO CERRADO\n${SEP}\n\n"${entity.title}"`
       );
       return;
     }
 
     // start
-    await setState(env, senderPsid, { postId: id, mode: 'gallery' });
+    await setState(env, senderPsid, { postId: id, mode: 'gallery', kind: entity.kind });
+    const label = entity.kind === 'diary' ? '📓 DIARIO' : '📌 BLOG';
     await messenger.sendText(
       senderPsid,
-      `📸 MODO GALERÍA ACTIVO\n${SEP}\n\n📌 "${post.title}"\n\nEnvía las imágenes una por una.\nCuando termines:\n\n/end`
+      `📸 MODO GALERÍA ACTIVO\n${SEP}\n\n${label}: "${entity.title}"\n\nEnvía las imágenes una por una.\nCuando termines:\n\n/end`
+    );
+    return;
+  }
+
+  // ───── DIARIO PRIVADO ─────
+
+  // /diario (multiline) — create private diary entry
+  if (lower.startsWith('/diario')) {
+    const body = trimmed.slice('/diario'.length).trim();
+    if (!body) {
+      await messenger.sendText(
+        senderPsid,
+        `❗ Formato:\n\n/diario\nLo que quieras escribir...`
+      );
+      return;
+    }
+
+    const diary = buildDiaryService(env);
+    const created = await diary.createEntry(body);
+    const date = new Date(created.createdAt).toLocaleString('es-MX', {
+      dateStyle: 'full',
+      timeStyle: 'short',
+      timeZone: 'America/Mexico_City',
+    });
+
+    await messenger.sendText(
+      senderPsid,
+      `📓 ENTRADA GUARDADA\n${SEP}\n\n📅 ${date}\n🆔 ${created.id}\n\n${SEP}\nSIGUIENTE (opcional)\n\n📷 /image ${created.id} start\n   (para agregar fotos)`
+    );
+    return;
+  }
+
+  // /dlist — list diary entries
+  if (lower === '/dlist') {
+    const diary = buildDiaryService(env);
+    const entries = await diary.listAll();
+    if (entries.length === 0) {
+      await messenger.sendText(
+        senderPsid,
+        `📭 Diario vacío\n${SEP}\n\nUsa /diario para escribir tu primera entrada.`
+      );
+      return;
+    }
+    const lines = entries.slice(0, 5).map((e, i) => {
+      const date = new Date(e.createdAt).toLocaleDateString('es-MX', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+      const preview = e.content.slice(0, 50).replace(/\n/g, ' ');
+      const more = e.content.length > 50 ? '...' : '';
+      return `${i + 1}. 📅 ${date}\n   "${preview}${more}"\n   🆔 ${e.id}`;
+    });
+    await messenger.sendText(
+      senderPsid,
+      `📓 ÚLTIMAS ENTRADAS\n${SEP}\n\n${lines.join('\n\n')}`
     );
     return;
   }
@@ -443,8 +688,6 @@ async function handleAttachmentCommand(
   env: Env,
   messenger: MessengerService
 ): Promise<void> {
-  const blog = buildBlogService(env);
-
   // Filter all image attachments (Messenger may bundle multiple)
   const images = attachments.filter((a) => a.type === 'image' && a.payload?.url);
   if (images.length === 0) {
@@ -456,21 +699,21 @@ async function handleAttachmentCommand(
   if (!state) {
     await messenger.sendText(
       senderPsid,
-      'ℹ️ Recibí una imagen pero no estás en ningún modo.\n\nUsa primero:\n/image <id> start'
+      'ℹ️ Recibí una imagen pero no estás en ningún modo.\n\nUsa primero:\n/image <id> start  (post)\n/dimg <id> start   (diario)'
     );
     return;
   }
 
-  // Verify post still exists
-  const post = await blog.getAdminById(state.postId);
-  if (!post) {
-    await clearState(env, senderPsid);
-    await messenger.sendText(senderPsid, '❌ El post asociado al modo activo ya no existe. Modo cerrado.');
-    return;
-  }
+  // ───── BLOG kind ─────
+  if (state.kind === 'blog') {
+    const blog = buildBlogService(env);
+    const post = await blog.getAdminById(state.postId);
+    if (!post) {
+      await clearState(env, senderPsid);
+      await messenger.sendText(senderPsid, '❌ El post asociado al modo activo ya no existe. Modo cerrado.');
+      return;
+    }
 
-  // ───── GALLERY mode: append all images, keep state ─────
-  {
     let added = 0;
     let nextOrder = post.gallery.length;
     const errors: string[] = [];
@@ -498,9 +741,50 @@ async function handleAttachmentCommand(
     }
 
     let reply = `📷 IMAGEN AGREGADA\n${SEP}\n\n+${added} foto${added === 1 ? '' : 's'} en "${post.title}"\n📊 Total: ${nextOrder}`;
-    if (errors.length > 0) {
-      reply += `\n\n⚠️ ${errors.length} fallaron.`;
+    if (errors.length > 0) reply += `\n\n⚠️ ${errors.length} fallaron.`;
+    reply += `\n\n${SEP}\nSigue mandando fotos o /end para cerrar.`;
+    await messenger.sendText(senderPsid, reply);
+    return;
+  }
+
+  // ───── DIARY kind ─────
+  if (state.kind === 'diary') {
+    const diary = buildDiaryService(env);
+    const entry = await diary.getEntryWithImages(state.postId);
+    if (!entry) {
+      await clearState(env, senderPsid);
+      await messenger.sendText(senderPsid, '❌ La entrada del diario ya no existe. Modo cerrado.');
+      return;
     }
+
+    let added = 0;
+    let nextOrder = entry.gallery.length;
+    const errors: string[] = [];
+
+    for (const image of images) {
+      if (!image.payload.url) continue;
+      try {
+        const downloaded = await messenger.downloadAttachment(image.payload.url);
+        const ext = downloaded.contentType.includes('png')
+          ? 'png'
+          : downloaded.contentType.includes('webp')
+            ? 'webp'
+            : 'jpg';
+        const key = diary.buildImageKey(state.postId, `diary_${Date.now()}_${nextOrder}.${ext}`);
+        await env.R2.put(key, downloaded.bytes, {
+          httpMetadata: { contentType: downloaded.contentType },
+        });
+        await diary.addImage(state.postId, key, nextOrder);
+        nextOrder++;
+        added++;
+      } catch (err) {
+        console.error('[messenger] diary image failed', err);
+        errors.push(err instanceof Error ? err.message : 'unknown');
+      }
+    }
+
+    let reply = `📷 FOTO DIARIO\n${SEP}\n\n+${added} foto${added === 1 ? '' : 's'} guardada${added === 1 ? '' : 's'}\n📊 Total: ${nextOrder}`;
+    if (errors.length > 0) reply += `\n\n⚠️ ${errors.length} fallaron.`;
     reply += `\n\n${SEP}\nSigue mandando fotos o /end para cerrar.`;
     await messenger.sendText(senderPsid, reply);
     return;

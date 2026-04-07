@@ -11,6 +11,7 @@ import { chatRoutes } from './chat/chat.routes';
 import { adviceRoutes } from './advice/advice.routes';
 import { blogRoutes } from './blog/blog.routes';
 import { messengerRoutes } from './messenger/messenger.routes';
+import { diaryRoutes } from './diary/diary.routes';
 
 export type Env = {
   DATABASE_URL: string;
@@ -62,5 +63,6 @@ app.route('/api/chat', chatRoutes);
 app.route('/api/advice', adviceRoutes);
 app.route('/api/blog', blogRoutes);
 app.route('/api/messenger', messengerRoutes);
+app.route('/api/diary', diaryRoutes);
 
 export default app;
