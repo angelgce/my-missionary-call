@@ -46,3 +46,32 @@ frontend/src/modules/<feature>/
 - Keep components focused and single-responsibility
 - Use Poppins as default font
 - NEVER create files without explicit request
+
+## Color Palette (Tailwind config)
+The site uses a soft pink/rose palette — NOT generic Tailwind colors:
+- `cream` `#FEF6F9` (page bg), `warm-white` `#FFF8FA` (cards)
+- `gold` `#D4849B` (primary accent), `gold-dark` `#BE6B84`
+- `navy` `#3B2140` (headings), `slate` `#726078` (body)
+- `blush` `#F8E0E8`, `rose-soft` `#F0CCD7`
+- Fonts: `font-sans` Poppins, `font-serif` Playfair Display, `font-cursive` Dancing Script
+
+## Existing Modules
+- **home/** — `Home.tsx` (large monolithic landing page with envelope reveal flow)
+- **predict/** — Country prediction game
+- **revelation/** — Letter reveal animation
+- **advice/** — Public advice box + admin view
+- **admin/** — Login, dashboard, diary viewer
+- **blog/** — Public blog with rotating gallery cover
+  - `BlogListPage.tsx`, `BlogDetailPage.tsx`
+  - `components/RotatingImage.tsx` — fades through `images[]` every N seconds with dot indicators
+  - `components/LatestNewsCard.tsx` — used in Home, shows latest published post
+  - `blogService.ts` — API calls (`fetchPublicPosts`, `fetchPublicPostBySlug`)
+- **admin/AdminDiaryPage.tsx** — admin-only diary viewer at `/admin/diario`. Lists entries with date/time, content, gallery, delete button. Requires `localStorage.token`.
+
+## Naming the Missionary
+- Always use **"Hermana Tarazona"** in copy (use surname, never "Hermana Alexha")
+- Repository/bucket paths still use `alexa` — those are infrastructure, never changed
+
+## Routes
+Public: `/`, `/predict`, `/advice`, `/revelation`, `/blog`, `/blog/:slug`
+Admin: `/admin`, `/admin/dashboard`, `/admin/diario`, `/consejos`
