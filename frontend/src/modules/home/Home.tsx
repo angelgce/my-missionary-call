@@ -17,6 +17,7 @@ import HintsChatModal from '@/modules/home/components/HintsChatModal';
 const WorldMap = lazy(() => import('@/modules/predict/components/WorldMap'));
 import LetterCover from '@/modules/revelation/components/LetterCover';
 import PhotoCarousel from '@/modules/home/components/PhotoCarousel';
+import LatestNewsCard from '@/modules/blog/components/LatestNewsCard';
 const ResultsView = lazy(() => import('@/modules/home/components/ResultsView'));
 
 import LocationSelector from '@/modules/predict/components/LocationSelector';
@@ -2009,6 +2010,9 @@ function Home() {
           </div>
         );
       })()}
+      {/* Latest blog post */}
+      <LatestNewsCard />
+
       {/* Back to top */}
       <button
         onClick={handleScrollToTop}

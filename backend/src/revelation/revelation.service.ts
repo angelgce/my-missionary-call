@@ -59,12 +59,12 @@ export class RevelationService {
     // Admin or date expired — return full data
     let pdfText: string | null = null;
     if (rev.pdfText) {
-      pdfText = await decrypt(rev.pdfText, this.encryptionKey);
+      try { pdfText = await decrypt(rev.pdfText, this.encryptionKey); } catch { pdfText = rev.pdfText; }
     }
 
     let normalizedPdfText: string | null = null;
     if (rev.normalizedPdfText) {
-      normalizedPdfText = await decrypt(rev.normalizedPdfText, this.encryptionKey);
+      try { normalizedPdfText = await decrypt(rev.normalizedPdfText, this.encryptionKey); } catch { normalizedPdfText = rev.normalizedPdfText; }
     }
 
     return {

@@ -89,7 +89,11 @@ export async function decryptRevelation(
 ): Promise<RevelationData> {
   const decrypted: Partial<RevelationData> = {};
   for (const field of SENSITIVE_FIELDS) {
-    decrypted[field] = await decrypt(data[field], key);
+    try {
+      decrypted[field] = await decrypt(data[field], key);
+    } catch {
+      decrypted[field] = data[field];
+    }
   }
   return decrypted as RevelationData;
 }

@@ -9,6 +9,8 @@ const AdvicePage = lazy(() => import('@/modules/advice/AdvicePage'));
 const AdminAdvicePage = lazy(() => import('@/modules/advice/AdminAdvicePage'));
 const AdminLoginPage = lazy(() => import('@/modules/admin/AdminLoginPage'));
 const AdminDashboardPage = lazy(() => import('@/modules/admin/AdminDashboardPage'));
+const BlogListPage = lazy(() => import('@/modules/blog/BlogListPage'));
+const BlogDetailPage = lazy(() => import('@/modules/blog/BlogDetailPage'));
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
         <Route path="/consejos" element={<AdminAdvicePage />} />
         <Route path="/admin" element={<AdminLoginPage />} />
         <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+        <Route path="/blog" element={<BlogListPage />} />
+        <Route path="/blog/:slug" element={<BlogDetailPage />} />
       </Routes>
     </Suspense>
   );

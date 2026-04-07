@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, uuid, integer } from 'drizzle-orm/pg-core';
 
 export const userAdmin = pgTable('user_admin', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -38,6 +38,29 @@ export const adviceBox = pgTable('advice_box', {
   advice: text('advice').notNull(),
   sessionId: text('session_id').notNull(),
   ipAddress: text('ip_address'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const blogPosts = pgTable('blog_posts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  slug: text('slug').notNull().unique(),
+  title: text('title').notNull(),
+  excerpt: text('excerpt').notNull().default(''),
+  content: text('content').notNull().default(''),
+  coverImageKey: text('cover_image_key').notNull().default(''),
+  author: text('author').notNull().default('Hermana Alexha'),
+  readTime: text('read_time').notNull().default('3 min'),
+  isPublished: boolean('is_published').default(false).notNull(),
+  publishedAt: timestamp('published_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const blogPostImages = pgTable('blog_post_images', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  postId: uuid('post_id').notNull().references(() => blogPosts.id, { onDelete: 'cascade' }),
+  imageKey: text('image_key').notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

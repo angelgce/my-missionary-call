@@ -47,17 +47,25 @@ const initialState: PredictionState = {
 
 export const fetchPredictions = createAsyncThunk(
   'prediction/fetchAll',
-  async () => {
-    const response = await api.get('/predictions');
-    return response.data as Prediction[];
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/predictions');
+      return response.data as Prediction[];
+    } catch {
+      return rejectWithValue([] as Prediction[]);
+    }
   }
 );
 
 export const fetchMyPrediction = createAsyncThunk(
   'prediction/fetchMine',
-  async (sessionId: string) => {
-    const response = await api.get(`/predictions/session/${sessionId}`);
-    return response.data as Prediction;
+  async (sessionId: string, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/predictions/session/${sessionId}`);
+      return response.data as Prediction;
+    } catch {
+      return rejectWithValue(null);
+    }
   }
 );
 

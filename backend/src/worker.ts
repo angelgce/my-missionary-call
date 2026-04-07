@@ -9,6 +9,8 @@ import { revelationRoutes } from './revelation/revelation.routes';
 import { assetsRoutes } from './assets/assets.routes';
 import { chatRoutes } from './chat/chat.routes';
 import { adviceRoutes } from './advice/advice.routes';
+import { blogRoutes } from './blog/blog.routes';
+import { messengerRoutes } from './messenger/messenger.routes';
 
 export type Env = {
   DATABASE_URL: string;
@@ -19,6 +21,9 @@ export type Env = {
   R2_BUCKET_NAME: string;
   R2_ACCESS_KEY_ID: string;
   R2_SECRET_ACCESS_KEY: string;
+  MESSENGER_VERIFY_TOKEN: string;
+  MESSENGER_PAGE_ACCESS_TOKEN: string;
+  MESSENGER_ADMIN_PSIDS: string;
   AI: Ai;
   KV: KVNamespace;
   R2: R2Bucket;
@@ -54,5 +59,7 @@ app.route('/api/revelation', revelationRoutes);
 app.route('/api/assets', assetsRoutes);
 app.route('/api/chat', chatRoutes);
 app.route('/api/advice', adviceRoutes);
+app.route('/api/blog', blogRoutes);
+app.route('/api/messenger', messengerRoutes);
 
 export default app;

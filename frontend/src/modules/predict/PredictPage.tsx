@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 
+import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
 import { RootState } from '@/core/store/store';
@@ -165,6 +166,21 @@ function PredictPage() {
           </h1>
           <p className="mt-2 text-slate">Registra tu predicción de la misión</p>
         </div>
+
+        {/* Blog CTA */}
+        {myPrediction && (
+          <div className="mx-auto mt-8 flex max-w-md justify-center">
+            <Link
+              to="/blog"
+              className="group inline-flex items-center gap-2 rounded-full border border-gold/40 bg-warm-white px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.15em] text-navy shadow-sm transition-colors hover:border-gold hover:bg-gold/10 hover:text-gold-dark"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gold">
+                <path d="M4 4h11a3 3 0 013 3v13l-4-2-4 2-4-2-4 2V6a2 2 0 012-2z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+              </svg>
+              Ver mi blog
+            </Link>
+          </div>
+        )}
 
         {/* My prediction card */}
         {myPrediction && (
