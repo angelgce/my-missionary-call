@@ -18,7 +18,7 @@ type MissionData = {
   entryDate: string;
 };
 
-// comment xd  
+// comment xd cd 
 function buildSystemPrompt(data: MissionData): string {
   return `Eres un asistente misterioso y divertido para un evento de revelación de llamamiento misional SUD.
 Datos secretos: misión: ${data.missionName}, idioma: ${data.language}, CCM: ${data.trainingCenter}, fecha: ${data.entryDate}.
