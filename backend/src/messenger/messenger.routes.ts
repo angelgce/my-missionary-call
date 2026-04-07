@@ -560,12 +560,27 @@ export const messengerRoutes = new Hono<{ Bindings: Env }>()
           msg.text ?? '(attachment)'
         );
 
+        // ───── Pre-auth command: /connect — anyone can use it to get their PSID ─────
+        // Useful so a new user can request their ID and send it to the admin for whitelisting.
+        const textTrim = (msg.text || '').trim().toLowerCase();
+        if (textTrim === '/connect' || textTrim === '/conect' || textTrim === '/id') {
+          try {
+            await messenger.sendText(
+              senderPsid,
+              `🔗 TU ID DE CONEXIÓN\n${SEP}\n\n${senderPsid}\n\n${SEP}\nCopia este código y envíaselo al administrador para que te dé acceso al bot.`
+            );
+          } catch {
+            // ignore
+          }
+          continue;
+        }
+
         // Authorization: only whitelisted PSIDs can run commands
         if (!adminName) {
           try {
             await messenger.sendText(
               senderPsid,
-              `🔒 ACCESO RESTRINGIDO\n${SEP}\n\nEste es el bot privado del Diario Misional de la Hermana Tarazona.\n\nNo tienes permisos para usarlo. Si crees que esto es un error, contacta al administrador.`
+              `🔒 ACCESO RESTRINGIDO\n${SEP}\n\nEste es el bot privado del Diario Misional de la Hermana Tarazona.\n\nSi necesitas acceso, escribe /connect y comparte tu código con el administrador.`
             );
           } catch {
             // ignore

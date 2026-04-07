@@ -1060,6 +1060,9 @@ function Home() {
         <DecorativeDivider className="my-4 tablet:my-5" />
       </div>
 
+      {/* Latest blog post */}
+      <LatestNewsCard />
+
       {/* Action buttons */}
       <div className="relative z-10 flex w-full flex-col items-center gap-4 tablet:gap-5">
         <div className="flex w-full flex-col gap-3 tablet:flex-row tablet:justify-center tablet:gap-4">
@@ -2010,9 +2013,6 @@ function Home() {
           </div>
         );
       })()}
-      {/* Latest blog post */}
-      <LatestNewsCard />
-
       {/* Back to top */}
       <button
         onClick={handleScrollToTop}
