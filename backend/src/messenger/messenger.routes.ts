@@ -54,27 +54,104 @@ function buildBlogService(env: Env): BlogService {
   return new BlogService(repo, r2);
 }
 
-function isAdminPsid(psid: string, adminCsv: string): boolean {
-  if (!adminCsv) return false;
-  const list = adminCsv.split(',').map((s) => s.trim()).filter(Boolean);
-  return list.includes(psid);
+/**
+ * Parse the admin map from MESSENGER_ADMINS env var.
+ * Format: "psid1:Name1,psid2:Name2"
+ * Falls back to MESSENGER_ADMIN_PSIDS (no names) if MESSENGER_ADMINS is empty.
+ */
+function parseAdmins(env: Env): Map<string, string> {
+  const map = new Map<string, string>();
+  const raw = (env.MESSENGER_ADMINS || '').trim();
+  if (raw && raw !== 'PLACEHOLDER') {
+    for (const entry of raw.split(',')) {
+      const [psid, ...nameParts] = entry.trim().split(':');
+      if (psid && nameParts.length > 0) {
+        map.set(psid.trim(), nameParts.join(':').trim() || 'Admin');
+      }
+    }
+    return map;
+  }
+  // Fallback: legacy CSV without names
+  const legacy = (env.MESSENGER_ADMIN_PSIDS || '').trim();
+  if (legacy && legacy !== 'PLACEHOLDER') {
+    for (const psid of legacy.split(',').map((s) => s.trim()).filter(Boolean)) {
+      map.set(psid, 'Admin');
+    }
+  }
+  return map;
 }
 
-const HELP_TEXT = `📖 Comandos disponibles:
+function getAdminName(env: Env, psid: string): string | null {
+  return parseAdmins(env).get(psid) || null;
+}
 
+const SEP = '━━━━━━━━━━━━━';
+
+const HELP_TEXT = `✨ DIARIO MISIONAL ✨
+${SEP}
+
+📝 CREAR POST
 /post
 Título aquí
 ---
 Contenido del post.
 Puede tener varios párrafos.
 
-/list — últimos 5 posts con sus IDs
-/publish <id> — publica un post (lo hace visible)
-/unpublish <id> — vuelve borrador
-/delete <id> — elimina un post
-/cover <id> — adjunta una foto como portada (envía la imagen con este caption)
-/image <id> — agrega una foto a la galería del post
-/help — muestra esta ayuda`;
+${SEP}
+📋 GESTIÓN
+🔹 /list — últimos 5 posts
+🔹 /publish <id> — hacer público
+🔹 /unpublish <id> — volver borrador
+🔹 /delete <id> — eliminar post
+
+${SEP}
+📷 IMÁGENES
+🔹 /image <id> start — abrir modo galería
+🔹 /image <id> end — cerrar (o /end)
+🔹 /images <id> — ver imágenes del post
+🔹 /rmimg <imageId> — eliminar imagen
+
+Las fotos rotan como portada automáticamente.
+
+${SEP}
+🛟 OTROS
+🔹 /status — modo actual
+🔹 /whoami — quién soy
+🔹 /help — esta ayuda`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stateful image collection mode (KV-backed, 1h TTL)
+// ─────────────────────────────────────────────────────────────────────────────
+const STATE_TTL_SECONDS = 60 * 60; // 1 hour
+
+interface ImageState {
+  postId: string;
+  mode: 'gallery';
+}
+
+function stateKey(psid: string): string {
+  return `messenger:state:${psid}`;
+}
+
+async function getState(env: Env, psid: string): Promise<ImageState | null> {
+  const raw = await env.KV.get(stateKey(psid));
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as ImageState;
+  } catch {
+    return null;
+  }
+}
+
+async function setState(env: Env, psid: string, state: ImageState): Promise<void> {
+  await env.KV.put(stateKey(psid), JSON.stringify(state), {
+    expirationTtl: STATE_TTL_SECONDS,
+  });
+}
+
+async function clearState(env: Env, psid: string): Promise<void> {
+  await env.KV.delete(stateKey(psid));
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Command handlers
@@ -82,6 +159,7 @@ Puede tener varios párrafos.
 async function handleTextCommand(
   text: string,
   senderPsid: string,
+  adminName: string,
   env: Env,
   messenger: MessengerService
 ): Promise<void> {
@@ -91,7 +169,16 @@ async function handleTextCommand(
 
   // /help
   if (lower === '/help' || lower === '/start') {
-    await messenger.sendText(senderPsid, HELP_TEXT);
+    await messenger.sendText(senderPsid, `Hola, ${adminName} 💌\n\n${HELP_TEXT}`);
+    return;
+  }
+
+  // /whoami
+  if (lower === '/whoami') {
+    await messenger.sendText(
+      senderPsid,
+      `👤 ${adminName}\n${SEP}\n\n✅ Autorizado`
+    );
     return;
   }
 
@@ -99,14 +186,65 @@ async function handleTextCommand(
   if (lower === '/list') {
     const posts = await blog.listAdmin();
     if (posts.length === 0) {
-      await messenger.sendText(senderPsid, 'No hay posts todavía. Usa /post para crear el primero.');
+      await messenger.sendText(
+        senderPsid,
+        `📭 Sin posts aún\n${SEP}\n\nUsa /post para crear el primero.`
+      );
       return;
     }
     const lines = posts.slice(0, 5).map((p, i) => {
-      const status = p.isPublished ? '✅' : '📝';
-      return `${i + 1}. ${status} ${p.title}\n   id: ${p.id}`;
+      const status = p.isPublished ? '✅ publicado' : '📝 borrador';
+      return `${i + 1}. ${p.title}\n   ${status}\n   🆔 ${p.id}`;
     });
-    await messenger.sendText(senderPsid, `Últimos posts:\n\n${lines.join('\n\n')}`);
+    await messenger.sendText(
+      senderPsid,
+      `📚 ÚLTIMOS POSTS\n${SEP}\n\n${lines.join('\n\n')}`
+    );
+    return;
+  }
+
+  // /images <id> — list gallery
+  if (lower.startsWith('/images')) {
+    const id = trimmed.slice('/images'.length).trim();
+    if (!id) {
+      await messenger.sendText(senderPsid, '❗ Uso: /images <id>');
+      return;
+    }
+    const post = await blog.getAdminById(id);
+    if (!post) {
+      await messenger.sendText(senderPsid, '❌ Post no encontrado.');
+      return;
+    }
+    if (post.gallery.length === 0) {
+      await messenger.sendText(
+        senderPsid,
+        `🖼 "${post.title}"\n${SEP}\n\nSin imágenes aún.\n\nUsa /image ${id} start para agregar.`
+      );
+      return;
+    }
+    const lines = post.gallery.map(
+      (img, i) => `${i + 1}. 🆔 ${img.id}`
+    );
+    await messenger.sendText(
+      senderPsid,
+      `🖼 IMÁGENES DE "${post.title}"\n${SEP}\n\n${lines.join('\n')}\n\nElimina con:\n/rmimg <imageId>`
+    );
+    return;
+  }
+
+  // /rmimg <imageId> — remove image
+  if (lower.startsWith('/rmimg')) {
+    const imageId = trimmed.slice('/rmimg'.length).trim();
+    if (!imageId) {
+      await messenger.sendText(senderPsid, '❗ Uso: /rmimg <imageId>');
+      return;
+    }
+    const removed = await blog.removeImage(imageId);
+    if (!removed) {
+      await messenger.sendText(senderPsid, '❌ Imagen no encontrada.');
+      return;
+    }
+    await messenger.sendText(senderPsid, `🗑 Imagen eliminada.`);
     return;
   }
 
@@ -157,7 +295,7 @@ async function handleTextCommand(
 
     await messenger.sendText(
       senderPsid,
-      `✅ Post creado como borrador\n\n📌 ${created.title}\n🔗 slug: ${created.slug}\n🆔 id: ${created.id}\n\nSiguiente:\n• /cover ${created.id} (envía foto con este caption)\n• /publish ${created.id} cuando esté listo`
+      `✨ POST CREADO ✨\n${SEP}\n\n📌 ${created.title}\n🔗 ${created.slug}\n🆔 ${created.id}\n\n${SEP}\nSIGUIENTE PASO\n\n📷 /image ${created.id} start\n   (luego envía las fotos)\n\n🚀 /publish ${created.id}\n   (cuando esté listo)`
     );
     return;
   }
@@ -174,7 +312,10 @@ async function handleTextCommand(
       await messenger.sendText(senderPsid, '❌ Post no encontrado.');
       return;
     }
-    await messenger.sendText(senderPsid, `✅ Publicado: ${updated.title}`);
+    await messenger.sendText(
+      senderPsid,
+      `🚀 PUBLICADO\n${SEP}\n\n✅ "${updated.title}"\n\nYa es visible en /blog`
+    );
     return;
   }
 
@@ -190,7 +331,10 @@ async function handleTextCommand(
       await messenger.sendText(senderPsid, '❌ Post no encontrado.');
       return;
     }
-    await messenger.sendText(senderPsid, `📝 Volvió a borrador: ${updated.title}`);
+    await messenger.sendText(
+      senderPsid,
+      `📝 VUELTO A BORRADOR\n${SEP}\n\n"${updated.title}"`
+    );
     return;
   }
 
@@ -206,15 +350,74 @@ async function handleTextCommand(
       await messenger.sendText(senderPsid, '❌ Post no encontrado.');
       return;
     }
-    await messenger.sendText(senderPsid, `🗑 Eliminado: ${deleted.title}`);
+    await messenger.sendText(
+      senderPsid,
+      `🗑 ELIMINADO\n${SEP}\n\n"${deleted.title}"\n(También se borraron sus imágenes)`
+    );
     return;
   }
 
-  // /cover and /image without attachment → instruct
-  if (lower.startsWith('/cover') || lower.startsWith('/image')) {
+  // /status — show current mode
+  if (lower === '/status') {
+    const state = await getState(env, senderPsid);
+    if (!state) {
+      await messenger.sendText(senderPsid, '🟢 Sin modo activo. Estás libre.');
+    } else {
+      await messenger.sendText(
+        senderPsid,
+        `🔵 Modo galería activo\n📌 Post: ${state.postId}\n\nManda /end para salir.`
+      );
+    }
+    return;
+  }
+
+  // /end, /stop — exit any active mode
+  if (lower === '/end' || lower === '/stop') {
+    const state = await getState(env, senderPsid);
+    if (!state) {
+      await messenger.sendText(senderPsid, 'ℹ️ No estabas en ningún modo.');
+      return;
+    }
+    await clearState(env, senderPsid);
+    await messenger.sendText(senderPsid, '✅ Modo cerrado.');
+    return;
+  }
+
+  // /image <id> start | /image <id> end
+  if (lower.startsWith('/image')) {
+    const rest = trimmed.slice('/image'.length).trim();
+    // Parse: "<id> start" or "<id> end"
+    const match = rest.match(/^(\S+)(?:\s+(start|end|stop))?$/i);
+    if (!match) {
+      await messenger.sendText(
+        senderPsid,
+        '❗ Uso:\n/image <id> start  → inicia modo galería\n/image <id> end    → cierra modo galería'
+      );
+      return;
+    }
+    const id = match[1];
+    const action = (match[2] || 'start').toLowerCase();
+
+    const post = await blog.getAdminById(id);
+    if (!post) {
+      await messenger.sendText(senderPsid, '❌ Post no encontrado.');
+      return;
+    }
+
+    if (action === 'end' || action === 'stop') {
+      await clearState(env, senderPsid);
+      await messenger.sendText(
+        senderPsid,
+        `✅ MODO CERRADO\n${SEP}\n\n"${post.title}"`
+      );
+      return;
+    }
+
+    // start
+    await setState(env, senderPsid, { postId: id, mode: 'gallery' });
     await messenger.sendText(
       senderPsid,
-      'ℹ️ Para usar este comando, envía la foto con el comando como caption (ej: /cover abc-123).'
+      `📸 MODO GALERÍA ACTIVO\n${SEP}\n\n📌 "${post.title}"\n\nEnvía las imágenes una por una.\nCuando termines:\n\n/end`
     );
     return;
   }
@@ -228,86 +431,79 @@ async function handleTextCommand(
   // Plain message (not a command)
   await messenger.sendText(
     senderPsid,
-    '👋 Hola Hermana Tarazona. Escribe /help para ver los comandos disponibles.'
+    `👋 Hola, ${adminName}\n\nEscribe /help para ver los comandos disponibles.`
   );
 }
 
 async function handleAttachmentCommand(
-  caption: string,
+  _caption: string,
   attachments: MessengerAttachment[],
   senderPsid: string,
+  _adminName: string,
   env: Env,
   messenger: MessengerService
 ): Promise<void> {
-  const trimmed = caption.trim();
-  const lower = trimmed.toLowerCase();
   const blog = buildBlogService(env);
 
-  // Find the first image attachment
-  const image = attachments.find((a) => a.type === 'image' && a.payload?.url);
-  if (!image || !image.payload.url) {
-    await messenger.sendText(senderPsid, '❗ No detecté ninguna imagen. Envíala como foto adjunta.');
-    return;
+  // Filter all image attachments (Messenger may bundle multiple)
+  const images = attachments.filter((a) => a.type === 'image' && a.payload?.url);
+  if (images.length === 0) {
+    return; // not an image, ignore silently
   }
 
-  const isCover = lower.startsWith('/cover');
-  const isImage = lower.startsWith('/image');
-
-  if (!isCover && !isImage) {
+  // Look up active state for this sender
+  const state = await getState(env, senderPsid);
+  if (!state) {
     await messenger.sendText(
       senderPsid,
-      'ℹ️ Para guardar esta foto envíala con caption /cover <id> o /image <id>.'
+      'ℹ️ Recibí una imagen pero no estás en ningún modo.\n\nUsa primero:\n/image <id> start'
     );
     return;
   }
 
-  const command = isCover ? '/cover' : '/image';
-  const postId = trimmed.slice(command.length).trim();
-  if (!postId) {
-    await messenger.sendText(senderPsid, `❗ Uso: ${command} <id>`);
-    return;
-  }
-
-  // Verify post exists
-  const post = await blog.getAdminById(postId);
+  // Verify post still exists
+  const post = await blog.getAdminById(state.postId);
   if (!post) {
-    await messenger.sendText(senderPsid, '❌ Post no encontrado.');
+    await clearState(env, senderPsid);
+    await messenger.sendText(senderPsid, '❌ El post asociado al modo activo ya no existe. Modo cerrado.');
     return;
   }
 
-  // Download from FB CDN
-  let downloaded;
-  try {
-    downloaded = await messenger.downloadAttachment(image.payload.url);
-  } catch (err) {
-    console.error('[messenger] download failed', err);
-    await messenger.sendText(senderPsid, '❌ No pude descargar la imagen de Messenger.');
+  // ───── GALLERY mode: append all images, keep state ─────
+  {
+    let added = 0;
+    let nextOrder = post.gallery.length;
+    const errors: string[] = [];
+
+    for (const image of images) {
+      if (!image.payload.url) continue;
+      try {
+        const downloaded = await messenger.downloadAttachment(image.payload.url);
+        const ext = downloaded.contentType.includes('png')
+          ? 'png'
+          : downloaded.contentType.includes('webp')
+            ? 'webp'
+            : 'jpg';
+        const key = blog.buildImageKey(state.postId, `gallery_${Date.now()}_${nextOrder}.${ext}`);
+        await env.R2.put(key, downloaded.bytes, {
+          httpMetadata: { contentType: downloaded.contentType },
+        });
+        await blog.addImageToPost(state.postId, key, nextOrder);
+        nextOrder++;
+        added++;
+      } catch (err) {
+        console.error('[messenger] gallery image failed', err);
+        errors.push(err instanceof Error ? err.message : 'unknown');
+      }
+    }
+
+    let reply = `📷 IMAGEN AGREGADA\n${SEP}\n\n+${added} foto${added === 1 ? '' : 's'} en "${post.title}"\n📊 Total: ${nextOrder}`;
+    if (errors.length > 0) {
+      reply += `\n\n⚠️ ${errors.length} fallaron.`;
+    }
+    reply += `\n\n${SEP}\nSigue mandando fotos o /end para cerrar.`;
+    await messenger.sendText(senderPsid, reply);
     return;
-  }
-
-  // Build R2 key and upload via binding
-  const ext = downloaded.contentType.includes('png')
-    ? 'png'
-    : downloaded.contentType.includes('webp')
-      ? 'webp'
-      : 'jpg';
-  const filename = `${Date.now()}.${ext}`;
-  const key = blog.buildImageKey(postId, filename);
-
-  await env.R2.put(key, downloaded.bytes, {
-    httpMetadata: { contentType: downloaded.contentType },
-  });
-
-  if (isCover) {
-    await blog.updatePost(postId, { coverImageKey: key });
-    await messenger.sendText(senderPsid, `🖼 Portada actualizada para "${post.title}".`);
-  } else {
-    const nextOrder = post.gallery.length;
-    await blog.addImageToPost(postId, key, nextOrder);
-    await messenger.sendText(
-      senderPsid,
-      `📷 Imagen agregada a la galería de "${post.title}" (${nextOrder + 1} en total).`
-    );
   }
 }
 
@@ -352,12 +548,28 @@ export const messengerRoutes = new Hono<{ Bindings: Env }>()
         const msg = event.message;
         if (!senderPsid || !msg || msg.is_echo) continue;
 
+        const adminName = getAdminName(c.env, senderPsid);
+
         // Log every PSID so admin can find their own ID for whitelist setup.
-        console.log('[messenger] msg from PSID:', senderPsid, '| text:', msg.text ?? '(attachment)');
+        console.log(
+          '[messenger] msg from PSID:',
+          senderPsid,
+          '| admin:',
+          adminName ?? 'NO',
+          '| text:',
+          msg.text ?? '(attachment)'
+        );
 
         // Authorization: only whitelisted PSIDs can run commands
-        if (!isAdminPsid(senderPsid, c.env.MESSENGER_ADMIN_PSIDS)) {
-          // Silent for non-admins to avoid spamming random users
+        if (!adminName) {
+          try {
+            await messenger.sendText(
+              senderPsid,
+              `🔒 ACCESO RESTRINGIDO\n${SEP}\n\nEste es el bot privado del Diario Misional de la Hermana Tarazona.\n\nNo tienes permisos para usarlo. Si crees que esto es un error, contacta al administrador.`
+            );
+          } catch {
+            // ignore
+          }
           continue;
         }
 
@@ -367,11 +579,12 @@ export const messengerRoutes = new Hono<{ Bindings: Env }>()
               msg.text || '',
               msg.attachments,
               senderPsid,
+              adminName,
               c.env,
               messenger
             );
           } else if (msg.text) {
-            await handleTextCommand(msg.text, senderPsid, c.env, messenger);
+            await handleTextCommand(msg.text, senderPsid, adminName, c.env, messenger);
           }
         } catch (err) {
           console.error('[messenger] handler error', err);

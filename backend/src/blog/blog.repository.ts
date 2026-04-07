@@ -1,7 +1,11 @@
 import { eq, desc, asc, and } from 'drizzle-orm';
 import { NeonHttpDatabase } from 'drizzle-orm/neon-http';
+import { customAlphabet } from 'nanoid';
 
 import { blogPosts, blogPostImages } from '../database/drizzle-schema/schema.schema';
+
+// Short, URL-friendly IDs (no ambiguous chars). 10 chars ≈ very low collision risk for our scale.
+const generateId = customAlphabet('23456789abcdefghjkmnpqrstuvwxyz', 10);
 
 export interface CreatePostData {
   slug: string;
@@ -32,6 +36,7 @@ export class BlogRepository {
     const results = await this.db
       .insert(blogPosts)
       .values({
+        id: generateId(),
         ...data,
         publishedAt: data.isPublished ? new Date() : null,
       })
@@ -105,7 +110,7 @@ export class BlogRepository {
   async addImage(postId: string, imageKey: string, sortOrder: number) {
     const results = await this.db
       .insert(blogPostImages)
-      .values({ postId, imageKey, sortOrder })
+      .values({ id: generateId(), postId, imageKey, sortOrder })
       .returning();
     return results[0];
   }

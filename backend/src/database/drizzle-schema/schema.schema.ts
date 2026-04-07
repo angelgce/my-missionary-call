@@ -42,7 +42,7 @@ export const adviceBox = pgTable('advice_box', {
 });
 
 export const blogPosts = pgTable('blog_posts', {
-  id: uuid('id').primaryKey().defaultRandom(),
+  id: text('id').primaryKey(),
   slug: text('slug').notNull().unique(),
   title: text('title').notNull(),
   excerpt: text('excerpt').notNull().default(''),
@@ -57,8 +57,8 @@ export const blogPosts = pgTable('blog_posts', {
 });
 
 export const blogPostImages = pgTable('blog_post_images', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  postId: uuid('post_id').notNull().references(() => blogPosts.id, { onDelete: 'cascade' }),
+  id: text('id').primaryKey(),
+  postId: text('post_id').notNull().references(() => blogPosts.id, { onDelete: 'cascade' }),
   imageKey: text('image_key').notNull(),
   sortOrder: integer('sort_order').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

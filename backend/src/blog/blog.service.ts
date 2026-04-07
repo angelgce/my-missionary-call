@@ -71,16 +71,22 @@ export class BlogService {
   async listPublic() {
     const posts = await this.repo.findAllPublished();
     return Promise.all(
-      posts.map(async (p) => ({
-        id: p.id,
-        slug: p.slug,
-        title: p.title,
-        excerpt: p.excerpt,
-        author: p.author,
-        readTime: p.readTime,
-        publishedAt: p.publishedAt,
-        coverImageUrl: await this.signKey(p.coverImageKey),
-      }))
+      posts.map(async (p) => {
+        const images = await this.repo.findImagesByPostId(p.id);
+        const imageUrls = await Promise.all(
+          images.map((img) => this.signKey(img.imageKey))
+        );
+        return {
+          id: p.id,
+          slug: p.slug,
+          title: p.title,
+          excerpt: p.excerpt,
+          author: p.author,
+          readTime: p.readTime,
+          publishedAt: p.publishedAt,
+          images: imageUrls,
+        };
+      })
     );
   }
 
@@ -98,11 +104,8 @@ export class BlogService {
     const post = await this.repo.findPublishedBySlug(slug);
     if (!post) return null;
     const images = await this.repo.findImagesByPostId(post.id);
-    const gallery = await Promise.all(
-      images.map(async (img) => ({
-        id: img.id,
-        url: await this.signKey(img.imageKey),
-      }))
+    const imageUrls = await Promise.all(
+      images.map((img) => this.signKey(img.imageKey))
     );
     return {
       id: post.id,
@@ -113,8 +116,7 @@ export class BlogService {
       author: post.author,
       readTime: post.readTime,
       publishedAt: post.publishedAt,
-      coverImageUrl: await this.signKey(post.coverImageKey),
-      gallery,
+      images: imageUrls,
     };
   }
 

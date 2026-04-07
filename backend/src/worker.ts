@@ -24,6 +24,7 @@ export type Env = {
   MESSENGER_VERIFY_TOKEN: string;
   MESSENGER_PAGE_ACCESS_TOKEN: string;
   MESSENGER_ADMIN_PSIDS: string;
+  MESSENGER_ADMINS: string;
   AI: Ai;
   KV: KVNamespace;
   R2: R2Bucket;

@@ -8,12 +8,11 @@ export interface BlogPostListItem {
   author: string;
   readTime: string;
   publishedAt: string | null;
-  coverImageUrl: string;
+  images: string[];
 }
 
 export interface BlogPostDetail extends BlogPostListItem {
   content: string;
-  gallery: { id: string; url: string }[];
 }
 
 export const fetchPublicPosts = async (): Promise<BlogPostListItem[]> => {

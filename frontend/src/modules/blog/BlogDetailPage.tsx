@@ -4,6 +4,7 @@ import { Link, useParams, Navigate } from 'react-router-dom';
 import PageContainer from '@/shared/components/PageContainer';
 import DecorativeDivider from '@/shared/components/DecorativeDivider';
 
+import RotatingImage from '@/modules/blog/components/RotatingImage';
 import {
   fetchPublicPostBySlug,
   formatPostDate,
@@ -52,16 +53,7 @@ function BlogDetailPage() {
         to="/blog"
         className="inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-blush/30 px-4 py-2 text-[11px] font-medium text-gold transition-all hover:border-gold/40 hover:bg-blush/50"
       >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="15 18 9 12 15 6" />
         </svg>
         Todas las historias
@@ -89,12 +81,13 @@ function BlogDetailPage() {
             </p>
           </div>
 
-          {post.coverImageUrl && (
+          {post.images.length > 0 && (
             <div className="mt-8 overflow-hidden rounded-2xl border border-gold/15 shadow-lg tablet:mt-10">
-              <img
-                src={post.coverImageUrl}
+              <RotatingImage
+                images={post.images}
                 alt={post.title}
-                className="aspect-[16/9] w-full object-cover"
+                intervalMs={5000}
+                className="aspect-[16/9] w-full"
               />
             </div>
           )}
@@ -110,21 +103,21 @@ function BlogDetailPage() {
             ))}
           </div>
 
-          {post.gallery.length > 0 && (
+          {post.images.length > 1 && (
             <div className="mt-12 tablet:mt-16">
               <DecorativeDivider className="mb-6" />
               <p className="text-center text-[10px] font-medium uppercase tracking-[0.25em] text-gold/80">
                 Galería
               </p>
               <div className="mt-6 grid grid-cols-1 gap-4 tablet:grid-cols-2">
-                {post.gallery.map((img) => (
+                {post.images.map((src, idx) => (
                   <div
-                    key={img.id}
+                    key={idx}
                     className="overflow-hidden rounded-xl border border-gold/15 shadow-sm"
                   >
                     <img
-                      src={img.url}
-                      alt={post.title}
+                      src={src}
+                      alt={`${post.title} ${idx + 1}`}
                       loading="lazy"
                       className="aspect-[4/3] w-full object-cover transition-transform duration-500 hover:scale-105"
                     />

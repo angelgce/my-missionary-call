@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import RotatingImage from '@/modules/blog/components/RotatingImage';
 import {
   fetchPublicPosts,
   formatPostDate,
@@ -50,15 +51,12 @@ function LatestNewsCard() {
           className="group mt-6 flex flex-col overflow-hidden rounded-2xl border border-gold/20 bg-warm-white text-left shadow-md transition-all hover:-translate-y-1 hover:border-gold/40 hover:shadow-xl tablet:flex-row"
         >
           <div className="relative aspect-[16/10] overflow-hidden bg-blush/40 tablet:aspect-auto tablet:w-2/5">
-            {post.coverImageUrl && (
-              <img
-                src={post.coverImageUrl}
-                alt={post.title}
-                loading="lazy"
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-            )}
-            <span className="absolute left-3 top-3 rounded-full bg-warm-white/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gold">
+            <RotatingImage
+              images={post.images}
+              alt={post.title}
+              className="absolute inset-0 h-full w-full"
+            />
+            <span className="absolute left-3 top-3 z-10 rounded-full bg-warm-white/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gold">
               Nuevo
             </span>
           </div>
