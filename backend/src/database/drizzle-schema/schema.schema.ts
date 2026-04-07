@@ -48,7 +48,7 @@ export const blogPosts = pgTable('blog_posts', {
   excerpt: text('excerpt').notNull().default(''),
   content: text('content').notNull().default(''),
   coverImageKey: text('cover_image_key').notNull().default(''),
-  author: text('author').notNull().default('Hermana Alexha'),
+  author: text('author').notNull().default('Hermana Tarazona'),
   readTime: text('read_time').notNull().default('3 min'),
   isPublished: boolean('is_published').default(false).notNull(),
   publishedAt: timestamp('published_at'),

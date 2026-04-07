@@ -228,7 +228,7 @@ async function handleTextCommand(
   // Plain message (not a command)
   await messenger.sendText(
     senderPsid,
-    '👋 Hola Hermana Alexha. Escribe /help para ver los comandos disponibles.'
+    '👋 Hola Hermana Tarazona. Escribe /help para ver los comandos disponibles.'
   );
 }
 

@@ -113,7 +113,7 @@ function LatestNewsCard() {
             Próximamente
           </p>
           <p className="mt-2 text-xs leading-relaxed text-slate">
-            La Hermana Alexha pronto compartirá sus primeras historias desde la
+            La Hermana Tarazona pronto compartirá sus primeras historias desde la
             misión.
           </p>
           <p className="mt-3 font-cursive text-base text-gold">

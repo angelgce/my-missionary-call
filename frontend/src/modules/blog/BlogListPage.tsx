@@ -56,7 +56,7 @@ function BlogListPage() {
         Próximamente
       </p>
       <p className="mt-3 text-sm leading-relaxed text-slate">
-        La Hermana Alexha aún no ha enviado su primera carta desde el campo
+        La Hermana Tarazona aún no ha enviado su primera carta desde el campo
         misional. Vuelve pronto para leer sus historias y milagros.
       </p>
       <p className="mt-4 font-cursive text-lg text-gold">
@@ -85,7 +85,7 @@ function BlogListPage() {
         </h1>
         <DecorativeDivider className="my-4 tablet:my-6" />
         <p className="mx-auto max-w-xl text-sm text-slate tablet:text-base">
-          Historias, milagros y aprendizajes que la Hermana Alexha comparte
+          Historias, milagros y aprendizajes que la Hermana Tarazona comparte
           desde el campo misional.
         </p>
       </div>
