@@ -6,6 +6,8 @@ import { BlogRepository } from '../blog/blog.repository';
 import { BlogService, R2Config } from '../blog/blog.service';
 import { DiaryRepository } from '../diary/diary.repository';
 import { DiaryService } from '../diary/diary.service';
+import { AdviceRepository } from '../advice/advice.repository';
+import { AdviceService } from '../advice/advice.service';
 import { MessengerService } from './messenger.service';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,6 +56,11 @@ function buildBlogService(env: Env): BlogService {
     secretAccessKey: env.R2_SECRET_ACCESS_KEY,
   };
   return new BlogService(repo, r2);
+}
+
+function buildAdviceService(env: Env): AdviceService {
+  const db = getDb(env.DATABASE_URL);
+  return new AdviceService(new AdviceRepository(db));
 }
 
 function buildDiaryService(env: Env): DiaryService {
@@ -177,7 +184,14 @@ ${SEP}
 🔹 /dlist — entradas del diario
 🔹 /publish <id> — hacer público (blog)
 🔹 /unpublish <id> — volver borrador (blog)
+🔹 /edit <id> — editar (blog o diario)
 🔹 /delete <id> — eliminar (blog o diario)
+
+${SEP}
+💌 CONSEJOS RECIBIDOS
+🔹 /consejos — ver consejos (5 por página)
+🔹 /consejos 2 — página 2
+🔹 /consejos 10-3 — 10 por página, página 3
 
 ${SEP}
 📷 IMÁGENES (funcionan en blog o diario)
@@ -663,6 +677,155 @@ async function handleTextCommand(
     await messenger.sendText(
       senderPsid,
       `📓 ÚLTIMAS ENTRADAS\n${SEP}\n\n${lines.join('\n\n')}`
+    );
+    return;
+  }
+
+  // /edit <id> (multiline) — edit blog post or diary entry
+  if (lower.startsWith('/edit') || lower.startsWith('/editar')) {
+    const prefix = lower.startsWith('/editar') ? '/editar' : '/edit';
+    const body = trimmed.slice(prefix.length).trim();
+    const firstSpace = body.indexOf(' ');
+    const firstNewline = body.indexOf('\n');
+    // Separator is the first whitespace (space or newline)
+    const sepIdx = [firstSpace, firstNewline].filter((i) => i >= 0).sort((a, b) => a - b)[0];
+    if (sepIdx === undefined || sepIdx < 0) {
+      await messenger.sendText(
+        senderPsid,
+        `❗ Formato:\n\n/edit <id>\nNuevo contenido\n\n(Para blog: primera línea = título, --- separador, resto = contenido)`
+      );
+      return;
+    }
+    const id = body.slice(0, sepIdx).trim();
+    const newBody = body.slice(sepIdx + 1).trim();
+    if (!id || !newBody) {
+      await messenger.sendText(senderPsid, '❗ Falta id o contenido.');
+      return;
+    }
+
+    const entity = await resolveEntity(env, id);
+    if (!entity) {
+      await messenger.sendText(senderPsid, '❌ ID no encontrado (ni en blog ni en diario).');
+      return;
+    }
+
+    if (entity.kind === 'blog') {
+      // Parse title + content like /post
+      const lines = newBody.split('\n').map((l) => l.trimEnd());
+      const newTitle = lines[0].trim();
+      let contentLines = lines.slice(1);
+      while (
+        contentLines.length > 0 &&
+        (contentLines[0].trim() === '' || contentLines[0].trim() === '---')
+      ) {
+        contentLines = contentLines.slice(1);
+      }
+      const newContent = contentLines.join('\n').trim();
+      const excerpt = newContent.split('\n').find((l) => l.trim().length > 0)?.slice(0, 200) || '';
+
+      await blog.updatePost(id, { title: newTitle, content: newContent, excerpt });
+      await messenger.sendText(
+        senderPsid,
+        `✏️ POST ACTUALIZADO\n${SEP}\n\n📌 ${newTitle}\n🆔 ${id}`
+      );
+    } else {
+      const diary = buildDiaryService(env);
+      await diary.updateEntry(id, newBody);
+      await messenger.sendText(
+        senderPsid,
+        `✏️ ENTRADA DEL DIARIO ACTUALIZADA\n${SEP}\n\n🆔 ${id}`
+      );
+    }
+    return;
+  }
+
+  // /eliminar — alias of /delete
+  if (lower.startsWith('/eliminar')) {
+    const id = trimmed.slice('/eliminar'.length).trim();
+    if (!id) {
+      await messenger.sendText(senderPsid, '❗ Uso: /eliminar <id>');
+      return;
+    }
+    const entity = await resolveEntity(env, id);
+    if (!entity) {
+      await messenger.sendText(senderPsid, '❌ ID no encontrado.');
+      return;
+    }
+    if (entity.kind === 'blog') {
+      const deleted = await blog.deletePost(id);
+      await messenger.sendText(
+        senderPsid,
+        `🗑 POST ELIMINADO\n${SEP}\n\n"${deleted?.title}"\n(También sus imágenes)`
+      );
+    } else {
+      const diary = buildDiaryService(env);
+      await diary.deleteEntry(id);
+      await messenger.sendText(
+        senderPsid,
+        `🗑 ENTRADA DEL DIARIO ELIMINADA\n${SEP}\n\n${entity.title}\n(También sus imágenes)`
+      );
+    }
+    return;
+  }
+
+  // /consejos [page] or /consejos [size]-[page] — paginated advice viewer
+  if (lower.startsWith('/consejos')) {
+    const arg = trimmed.slice('/consejos'.length).trim();
+
+    // Parse: "" | "N" | "S-P"
+    let reqPageSize = 5;
+    let reqPage = 1;
+    if (arg) {
+      const dashMatch = arg.match(/^(\d+)-(\d+)$/);
+      if (dashMatch) {
+        reqPageSize = parseInt(dashMatch[1], 10);
+        reqPage = parseInt(dashMatch[2], 10);
+      } else if (/^\d+$/.test(arg)) {
+        reqPage = parseInt(arg, 10);
+      } else {
+        await messenger.sendText(
+          senderPsid,
+          `❗ Uso:\n/consejos — primera página (5 por página)\n/consejos 2 — página 2\n/consejos 10-3 — 10 por página, página 3`
+        );
+        return;
+      }
+    }
+
+    const advice = buildAdviceService(env);
+    const result = await advice.getPaginated(reqPage, reqPageSize);
+
+    if (result.total === 0) {
+      await messenger.sendText(
+        senderPsid,
+        `💌 SIN CONSEJOS\n${SEP}\n\nAún nadie ha dejado un consejo.`
+      );
+      return;
+    }
+
+    const lines = result.items.map((a, i) => {
+      const date = new Date(a.createdAt).toLocaleDateString('es-MX', {
+        day: 'numeric',
+        month: 'short',
+      });
+      const truncated =
+        a.advice.length > 300 ? a.advice.slice(0, 300) + '...' : a.advice;
+      return `${result.startIndex + i + 1}. 💌 ${a.guestName} · ${date}\n"${truncated}"`;
+    });
+
+    const header = `💌 CONSEJOS (${result.total} total)\n${SEP}\nPágina ${result.page} de ${result.totalPages}`;
+    const navParts: string[] = [];
+    if (result.page < result.totalPages) {
+      navParts.push(`➡️ /consejos ${result.pageSize}-${result.page + 1}`);
+    }
+    if (result.page > 1) {
+      navParts.push(`⬅️ /consejos ${result.pageSize}-${result.page - 1}`);
+    }
+    const footer =
+      navParts.length > 0 ? `\n\n${SEP}\nNavegación:\n${navParts.join('\n')}` : '';
+
+    await messenger.sendText(
+      senderPsid,
+      `${header}\n\n${lines.join('\n\n')}${footer}`
     );
     return;
   }

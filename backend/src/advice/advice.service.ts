@@ -28,4 +28,28 @@ export class AdviceService {
   async deleteById(id: string) {
     return this.repo.deleteById(id);
   }
+
+  /**
+   * Paginate advice list. Clamps invalid inputs and returns metadata.
+   */
+  async getPaginated(page: number, pageSize: number) {
+    const all = await this.repo.findAll();
+    const total = all.length;
+
+    const size = Math.min(Math.max(1, pageSize), 20);
+    const totalPages = Math.max(1, Math.ceil(total / size));
+    const safePage = Math.min(Math.max(1, page), totalPages);
+
+    const start = (safePage - 1) * size;
+    const items = all.slice(start, start + size);
+
+    return {
+      items,
+      page: safePage,
+      pageSize: size,
+      total,
+      totalPages,
+      startIndex: start,
+    };
+  }
 }
